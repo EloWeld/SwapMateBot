@@ -32,7 +32,8 @@ class ConstantsMetaClass(type):
     def __getattr__(cls, key):
         doc = MDB.Settings.find_one(dict(id="Constants"))
         if not doc:
-            doc = MDB.Settings.insert_one(dict(id="Constants"))
+            MDB.Settings.insert_one(dict(id="Constants"))
+            doc = MDB.Settings.find_one(dict(id="Constants"))
         # If key in constants
         if key in doc:
             return doc[key]
@@ -52,6 +53,8 @@ bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
 ms = MemoryStorage()
 dp = Dispatcher(bot, storage=ms)
 # ===============================
+from middlewares.user_middleware import TgUserMiddleware
+dp.setup_middleware(TgUserMiddleware())
 
 
 async def onBotStartup(data):

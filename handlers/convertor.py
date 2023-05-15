@@ -1,3 +1,4 @@
+from etc.keyboards import Keyboards
 from loader import dp
 from aiogram.types import CallbackQuery, Message
 from aiogram.dispatcher import FSMContext
@@ -13,4 +14,4 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     if actions[0] == "actual_price":
         await c.answer("🧠 В разработке", show_alert=True)
     if actions[0] == "deal_calc":
-        await c.answer("🧠 В разработке", show_alert=True)
+        await c.message.edit_text("1️⃣Выберите валюту которую хотите ОБМЕНЯТЬ в левой колонке\n\n2️⃣Выберите валюту которую хотите ПОЛУЧИТЬ в правой колонке", reply_markup=Keyboards.Calc.main())

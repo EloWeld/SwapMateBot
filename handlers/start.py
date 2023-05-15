@@ -1,6 +1,6 @@
 from etc.keyboards import Keyboards
 from loader import dp
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from models.tg_user import TgUser
 from aiogram.dispatcher import FSMContext
 
@@ -19,3 +19,10 @@ async def _(m:Message, state:FSMContext=None):
     user.save()
     
     await m.answer("Hello!", reply_markup=Keyboards.start_menu(user))
+    
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('|main'), state="*")
+async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
+    
+    await c.message.edit_text("Hello!", reply_markup=Keyboards.start_menu(user))
