@@ -38,9 +38,14 @@ class Keyboards:
             currencies: List[Currency] = Currency.objects.raw({"is_available": True})
             for currency in currencies:
                 k.row()
-                k.insert(IButton(f"{currency.symbol}" if selected_from != currency.symbol else f"✅ {currency.symbol}", callback_data=f"|convertor:sel_from:{currency.symbol}"))
-                k.insert(IButton(f"{currency.symbol}" if selected_to != currency.symbol else f"✅ {currency.symbol}", callback_data=f"|convertor:sel_to:{currency.symbol}"))
-            
+                f = selected_from.symbol if selected_from else None
+                t = selected_to.symbol if selected_to else None
+                k.insert(IButton(f"{currency.symbol}" if f != currency.symbol else f"✅ {currency.symbol}", callback_data=f"|convertor:sel_from:{currency.symbol}"))
+                k.insert(IButton(f"{currency.symbol}" if t != currency.symbol else f"✅ {currency.symbol}", callback_data=f"|convertor:sel_to:{currency.symbol}"))
+                
+            if selected_from and selected_to and selected_from != selected_to:
+                k.row(IButton(BOT_TEXTS.Continue, callback_data=f"|convertor:start_deal"))
+                
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|main"))
             
             return k

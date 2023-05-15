@@ -1,8 +1,5 @@
-import asyncio
-import loguru
 from pymongo import MongoClient
 import os
-import platform
 from os.path import join, dirname
 from dotenv import load_dotenv
 from loguru import logger
@@ -27,7 +24,7 @@ REQUESTS_TIMEOUT = 8
 MDB = MongoClient(MONGODB_CONNECTION_URI).get_database(MONGO_DB_NAME)
 connect(MONGODB_CONNECTION_URI+f'/{MONGO_DB_NAME}', alias="pymodm-conn")
 
-
+# Constants class
 class ConstantsMetaClass(type):
     def __getattr__(cls, key):
         doc = MDB.Settings.find_one(dict(id="Constants"))
@@ -52,7 +49,7 @@ class Consts(metaclass=ConstantsMetaClass):
 bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
 ms = MemoryStorage()
 dp = Dispatcher(bot, storage=ms)
-# ===============================
+# Load middlewares
 from middlewares.user_middleware import TgUserMiddleware
 dp.setup_middleware(TgUserMiddleware())
 
