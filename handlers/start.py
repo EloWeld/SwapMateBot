@@ -1,13 +1,13 @@
 from etc.keyboards import Keyboards
-from loader import dp
-from aiogram.types import Message, CallbackQuery
+from loader import bot, dp
+from aiogram.types import Message, CallbackQuery, BotCommand, BotCommandScopeAllPrivateChats
 from models.tg_user import TgUser
 from aiogram.dispatcher import FSMContext
 
 @dp.message_handler(commands="start", state="*")
 async def _(m:Message, state:FSMContext=None):
-    
-    
+    if state:
+        await state.finish()
     try:
         user = TgUser.objects.get({'_id': m.from_user.id})
     except TgUser.DoesNotExist:
@@ -19,6 +19,9 @@ async def _(m:Message, state:FSMContext=None):
     user.save()
     
     await m.answer("Hello!", reply_markup=Keyboards.start_menu(user))
+    await bot.set_my_commands([
+        BotCommand("start", "Перезапуск бота")
+    ], scope=BotCommandScopeAllPrivateChats())
     
 
 

@@ -1,16 +1,23 @@
 from typing import List
 import loguru
+import requests
 from loader import MDB, bot
+from models.etc import Currency
 from models.tg_user import TgUser
 
+
+def rate_to_str(c1, c2, rate, postfix=""):
+    return f"1 {c2}{postfix} = {rate} {c1}"
+
 async def notifyAdmins(text: str):
-    admins: List[TgUser] = TgUser.objects.raw({"isAdmin": True})
-    
+    admins: List[TgUser] = TgUser.objects.raw({"is_admin": True})
+
     for admin in admins:
         try:
             await bot.send_message(admin.id, text)
         except Exception as e:
             loguru.logger.error(f"Can't send message to admin: {e}")
+
 
 def split_long_text(text: str, max_length: int = 4000):
     parts = []
@@ -23,3 +30,20 @@ def split_long_text(text: str, max_length: int = 4000):
         text = text[split_position:]
     parts.append(text)
     return parts
+
+
+def get_rates_text():
+
+    currencies: List[Currency] = Currency.objects.raw({"is_available": True})
+    rates_text = ""
+    for currency in currencies:
+        rates_text += rate_to_str('RUB', currency.symbol, currency.rub_rate,
+                                  ' (crypto)' if currency.is_crypto else '') + "\n"
+
+    r = requests.get("https://www.cbr-xml-daily.ru/latest.js").json()['rates']
+
+    rates_text += f"\nКурс ЦБ:\n"\
+        f"{rate_to_str('RUB', 'CNY', r['CNY'])}\n"\
+        f"{rate_to_str('RUB', 'USD', r['USD'])}\n"
+
+    return rates_text
