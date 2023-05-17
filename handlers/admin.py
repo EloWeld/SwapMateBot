@@ -1,5 +1,7 @@
 import os
 from typing import List
+from etc.states import AdminInputStates
+from etc.texts import BOT_TEXTS
 from etc.utils import get_rates_text
 from loader import bot, dp
 from aiogram.types import CallbackQuery, Message, ContentType
@@ -10,6 +12,14 @@ from models.etc import Currency
 from models.tg_user import TgUser
 from etc.keyboards import Keyboards
 
+async def send_currencies(message: Message, is_edit = False):
+    currencies: List[Currency] = Currency.objects.raw({"is_available": True})
+    c_text = ""
+    for currency in currencies:
+        c_text += f"{currency.symbol} | {currency.pool_balance} | {currency.rub_rate} ₽\n"
+        
+    func = message.edit_text if is_edit else message.answer
+    await func("💎 Список ваших валют\n"+c_text, reply_markup=Keyboards.Admin.Currencies.all_pool_currencies(currencies))
 
 @dp.callback_query_handler(lambda c: c.data.startswith('|admin'), state="*")
 async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
@@ -17,6 +27,8 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     
     
     if actions[0] == "main":
+        if state:
+            await state.finish()
         await c.message.edit_text("Админ меню", reply_markup=Keyboards.admin_menu(user))
         return
     
@@ -24,7 +36,16 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         currencies: List[Currency] = Currency.objects.raw({"is_available": True})
         await c.message.edit_text("💎 Выберите валюту чтобы установить её курс\n\nТекущие курсы:\n" + get_rates_text(), 
                                   reply_markup=Keyboards.Admin.choose_currency_to_change_rate(currencies))
-        
+    
+    if actions[0] == "set_new_exchange_rate":
+        currency: Currency = Currency.objects.get({"_id": int(actions[1])})
+        await AdminInputStates.ChangeRate.set()
+        await state.update_data(currency=currency)
+        await c.message.edit_text(f"✏️ Установите новый курс валюты {currency.symbol}")
+    
+    if actions[0] == "my_currencies":
+        await send_currencies(c.message, True)
+    
     if actions[0] == "my_deals":
         deals = Deal.objects.all()
         await c.message.edit_text("💎 Выберите тип сделок", reply_markup=Keyboards.Admin.dealsTypes(deals))
@@ -52,11 +73,73 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
             return
         
         await c.message.edit_text("🧾 Приложите чек для отправки", reply_markup=Keyboards.back('|main'))
-        await state.set_state("send_receipt")
+        await AdminInputStates.SendReceipt.set()
         await state.update_data(deal=deal)
         
 
-@dp.message_handler(content_types=[ContentType.PHOTO], state="send_receipt")
+
+@dp.callback_query_handler(lambda c: c.data.startswith('|currency_pool'), state="*")
+async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
+    actions = c.data.split(':')[1:]
+    
+    
+    if actions[0] == "main":
+        if state:
+            await state.finish()
+        currency: Currency = Currency.objects.get({"_id": int(actions[1])})
+        await c.message.edit_text(f"💎 Валюта <code>{currency.symbol}</code>\n", reply_markup=Keyboards.Admin.Currencies.currency_actions(currency))
+        
+    if actions[0] == "buy":
+        currency: Currency = Currency.objects.get({"_id": int(actions[1])})
+        await c.message.edit_text(f"✏️ Укажите количество валюты которую вы купили:", reply_markup=Keyboards.back('|currency_pool:main:{}'))
+        
+        await AdminInputStates.BuyCurrency.set()
+        await state.update_data(currency=currency)
+
+@dp.message_handler(content_types=[ContentType.TEXT], state=AdminInputStates.BuyCurrency)
+async def _(m: Message, state: FSMContext = None):
+    # Get currency
+    stateData = await state.get_data()
+    currency: Currency = stateData['currency']
+    
+    try:
+        amount = float(m.text.replace(',','.'))
+    except Exception as e:
+        await m.answer(BOT_TEXTS.InvalidValue)
+        return
+    
+    currency.pool_balance += amount
+    currency.save()
+    
+    await state.finish()
+    
+    await m.answer("✅ Готово")
+    await send_currencies(m)
+    
+
+@dp.message_handler(content_types=[ContentType.TEXT], state=AdminInputStates.ChangeRate)
+async def _(m: Message, state: FSMContext = None):
+    # Get currency
+    stateData = await state.get_data()
+    currency: Currency = stateData['currency']
+    
+    try:
+        rate = float(m.text.replace(',','.'))
+    except Exception as e:
+        await m.answer(BOT_TEXTS.InvalidValue)
+        return
+    
+    currency.rub_rate = rate
+    currency.save()
+    
+    await state.finish()
+    
+    await m.answer("✅ Готово")
+    currencies: List[Currency] = Currency.objects.raw({"is_available": True})
+    await m.answer("💎 Выберите валюту чтобы установить её курс\n\nТекущие курсы:\n" + get_rates_text(), 
+                                reply_markup=Keyboards.Admin.choose_currency_to_change_rate(currencies))
+    
+@dp.message_handler(content_types=[ContentType.PHOTO], state=AdminInputStates.SendReceipt)
 async def _(m: Message, state: FSMContext = None):
     # Get deal
     stateData = await state.get_data()
@@ -81,3 +164,5 @@ async def _(m: Message, state: FSMContext = None):
         await m.answer(f"📤 Чек сделке  <code>{deal.id}</code> отправлен <a href='tg://user?id={deal.owner_id}'>пользователю</a>")
     except Exception as e:
         await m.answer(f"❌ Не удалось отправить чек пользователю из-за ошибки <code>{str(e)}</code>")
+        
+    await state.finish()

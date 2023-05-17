@@ -43,7 +43,7 @@ def get_rates_text():
     r = requests.get("https://www.cbr-xml-daily.ru/latest.js").json()['rates']
 
     rates_text += f"\nКурс ЦБ:\n"\
-        f"{rate_to_str('RUB', 'CNY', r['CNY'])}\n"\
-        f"{rate_to_str('RUB', 'USD', r['USD'])}\n"
+        f"{rate_to_str('RUB', 'CNY', round(1/r['CNY'], 4))}\n"\
+        f"{rate_to_str('RUB', 'USD', round(1/r['USD'], 4))}\n"
 
     return rates_text

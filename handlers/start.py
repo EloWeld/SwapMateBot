@@ -27,5 +27,6 @@ async def _(m:Message, state:FSMContext=None):
 
 @dp.callback_query_handler(lambda c: c.data.startswith('|main'), state="*")
 async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
-    
+    if state:
+            await state.finish()
     await c.message.edit_text("Hello!", reply_markup=Keyboards.start_menu(user))

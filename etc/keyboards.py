@@ -32,12 +32,27 @@ class Keyboards:
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
             return k
         
-        def choose_currency_to_change_rate(currencies):
+        def choose_currency_to_change_rate(currencies: List[Currency]):
             k = IKeyboard()
             for currency in currencies:
-                k.row(IButton(f"{currency.symbol}", callback_data=f"|admin:set_curr_exchange_rate:{currency.symbol}"))
+                k.row(IButton(f"{currency.symbol}", callback_data=f"|admin:set_new_exchange_rate:{currency.id}"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
             return k
+        
+        class Currencies:
+            def all_pool_currencies(currencies: List[Currency]):
+                k = IKeyboard()
+                for currency in currencies:
+                    k.row(IButton(currency.symbol, callback_data=f"|currency_pool:main:{currency.id}"))
+                k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
+                return k
+            
+            def currency_actions(currency: Currency):
+                k = IKeyboard()
+                k.row(IButton(f"Купить {currency.symbol}", callback_data=f"|currency_pool:buy:{currency.id}"))
+                k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:my_currencies"))
+                return k
+                
                 
             
     # Calc class

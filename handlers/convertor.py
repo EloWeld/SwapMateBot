@@ -45,3 +45,6 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
                                   f"💱 Направление: <code>{deal.currency_symbol_from}</code>🠖<code>{deal.currency_symbol_to}</code>\n"
                                   f"📅 Дата создания: <code>{str(deal.created_at)[:-7]}</code>\n", 
                                   reply_markup=Keyboards.Deals.deal_info(user, deal))
+        
+    if actions[0] == "found_cheaper":
+        await c.answer("Мне реально вот не важно, дешевле ты нашёл или нет, цены есть цены. Нравится - не нравится, терпи, моя красавица.", show_alert=True)
