@@ -19,12 +19,17 @@ async def _(m:Message, state:FSMContext=None):
     user.save()
 
     if user.is_member:
-        await m.answer("💠 Главное меню", reply_markup=Keyboards.start_menu(user))
+        await m.answer("💠 Главное меню 💠", reply_markup=Keyboards.start_menu(user))
         await bot.set_my_commands([
             BotCommand("start", "Перезапуск бота")
         ], scope=BotCommandScopeAllPrivateChats())
     else:
-        await m.answer("🚀 Добро пожаловать в бота! Для продолжения заполните заявку.", reply_markup=Keyboards.Identify.start_identify())
+        if user.join_request_status == "SENT":
+             await m.answer("🚀 Добро пожаловать в бота! Ожидайте рассмотрения заявки...")
+        elif user.join_request_status == "DISCARDED":
+             await m.answer("🚀 Добро пожаловать в бота! Ожидайте рассмотрения заявки...")
+        else:
+            await m.answer("🚀 Добро пожаловать в бота! Для продолжения заполните заявку. Пока что вам доступен ограниченный функционал", reply_markup=Keyboards.Identify.start_identify())
     
 
 

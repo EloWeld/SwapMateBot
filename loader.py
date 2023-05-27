@@ -18,6 +18,7 @@ MONGODB_CONNECTION_URI = os.environ["MongoConnectionString"]
 MONGO_DB_NAME = os.environ["MongoDatabaseName"]
 BOT_TOKEN = os.environ["BotToken"]
 REQUESTS_TIMEOUT = 8
+MAX_INLINE_COUNT = 10
 
 # Initialize MongoDB
 

@@ -2,19 +2,23 @@ from pydantic import BaseModel
 import json
 
 class BotTexts(BaseModel):
-    AdminMenuBtn = "💠 Админка 💠"
+    AdminMenuBtn = "🛡️ Админка 🛡️"
     SetExchangeRates = "🔄 Установить курсы"
     MyCurrencies = "💰 Мои валюты"
     MyDeals = "🤝 Мои свапы"
     MyRates = "📈 Мои курсы"
+    MyUsers = "👥 Пользователи"
+    Profile = "👩🏻‍💻 Профиль"
     
     
     DealCalc = "📊 Калькулятор свапов"
-    DealsHistory = "🗄 История сделок"
+    DealsHistory = "🗄 История свапов"
     ActualRates = "⭐️ Актуальные курсы"
     
     BackButton = "🔙 Назад"
     Continue = "🏁 Продолжить"
+    Previous = "⬅"
+    Next = "➡"
     
     InvalidValue = "❗ Некорректное значение"
     
@@ -24,6 +28,20 @@ class BotTexts(BaseModel):
     SendReceipt = "🧾 ОТПРАВИТЬ ЧЕК"
     Finish = "🏁 Завершить"
     FoundCheaper = "📈 Нашёл дешевле!"
+
+    verbose_emoji = {
+        "CANCELLED": "⛔", 
+        "ACTIVE": "⏳", 
+        "FINISHED": "🏁"
+    }
+
+    verbose = {
+        True: "Да",
+        False: "Нет",
+        "CANCELLED": "Отменённая", 
+        "ACTIVE": "Активная", 
+        "FINISHED": "Завершённая"
+    }
 
 # Создаем экземпляр класса
 BOT_TEXTS = BotTexts()

@@ -68,7 +68,7 @@ async def _(m: Message, state: FSMContext = None):
     await AdminInputStates.BuyCurrencySourceType.set()
     
 
-@dp.callback_query_handler(lambda c: c.data.startswith('|buy_currecny'), state=AdminInputStates.BuyCurrencySourceType)
+@dp.callback_query_handler(lambda c: c.data.startswith('|buy_currecny:'), state=AdminInputStates.BuyCurrencySourceType)
 async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     actions = c.data.split(':')[1:]
     

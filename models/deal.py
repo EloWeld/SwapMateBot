@@ -1,7 +1,13 @@
 from pymodm import MongoModel, fields
 from pymongo.write_concern import WriteConcern
+from enum import Enum
 
 class Deal(MongoModel):
+    class DealStatuses(Enum):
+        ACTIVE = "ACTIVE"
+        CANCELLED = "CANCELLED"
+        FINISHED = "FINISHED"
+
     id = fields.IntegerField(primary_key=True)
     external_id = fields.IntegerField()
     created_at = fields.DateTimeField()
@@ -11,7 +17,7 @@ class Deal(MongoModel):
     currency_type_from = fields.CharField(blank=True)
     currency_type_to = fields.CharField(blank=True)
     owner_id = fields.IntegerField(blank=False)
-    status = fields.CharField(choices=["ACTIVE", "CANCELLED", "FINISHED"], default="ACTIVE")
+    status = fields.CharField(choices=list(DealStatuses.__members__.keys()), default=DealStatuses.ACTIVE.value)
     
     class Meta:
         write_concern = WriteConcern(j=True)

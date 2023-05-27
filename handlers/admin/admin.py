@@ -22,10 +22,10 @@ async def send_currencies(message: Message, is_edit = False):
     func = message.edit_text if is_edit else message.answer
     await func("💎 Список ваших валют\n"+c_text, reply_markup=Keyboards.Admin.Currencies.all_pool_currencies(currencies))
 
-@dp.callback_query_handler(lambda c: c.data.startswith('|admin'), state="*")
+@dp.callback_query_handler(lambda c: c.data.startswith('|admin:'), state="*")
 async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     actions = c.data.split(':')[1:]
-    
+    stateData = {} if state is None else await state.get_data()
     
     if actions[0] == "main":
         if state:
@@ -49,21 +49,39 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     
     if actions[0] == "my_deals":
         deals = Deal.objects.all()
-        await c.message.edit_text("💎 Выберите тип сделок", reply_markup=Keyboards.Admin.dealsTypes(deals))
+        await c.message.edit_text("💎 Выберите тип свапов", reply_markup=Keyboards.Admin.dealsTypes(deals))
+        
+    
+    if actions[0] == "my_rates":
+        await c.answer("Без понятия что тут должно быть", show_alert=True)
         
     if actions[0] == "deals_with_status":
         status = actions[1]
-        verbose_status = {'CANCELLED': 'Отменённая', 'ACTIVE': 'Активная', 'FINISHED': 'Завершённая'}[status]
+        verbose_status = BOT_TEXTS.verbose[status]
         deals = Deal.objects.raw({"status": status})
-        await c.message.edit_text(f"💎 Ниже список сделок со статусом {verbose_status}", reply_markup=Keyboards.Admin.deals(deals))
+        await state.update_data(deals_status=status)
+
+        await c.message.edit_text(f"💎 Ниже список свапов со статусом {verbose_status}", reply_markup=Keyboards.Admin.deals(deals))
         
     
     if actions[0] == "finish_deal":
-        deals = Deal.objects.all()
-        await c.message.edit_text("В разработке", reply_markup=Keyboards.back('|main'))
+        deal: Deal = Deal.objects.get({"_id": int(actions[1])})
+
+        deal.status = Deal.DealStatuses.FINISHED.value
+        deal.save()
+
+        await c.answer("🏁 Сделка завершена!")
+        await c.message.edit_reply_markup(Keyboards.back(f"|admin:deals_with_status:{stateData.get('deals_status', deal.status)}"))
+
+
     if actions[0] == "cancel_deal":
-        deals = Deal.objects.all()
-        await c.message.edit_text("В разработке", reply_markup=Keyboards.back('|main'))
+        deal: Deal = Deal.objects.get({"_id": int(actions[1])})
+
+        deal.status = Deal.DealStatuses.CANCELLED.value
+        deal.save()
+
+        await c.answer("⛔ Сделка отменена!")
+        await c.message.edit_reply_markup(Keyboards.back(f"|admin:deals_with_status:{stateData.get('deals_status', deal.status)}"))
         
     if actions[0] == "send_deal_receipt":
         

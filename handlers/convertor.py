@@ -20,14 +20,14 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     if actions[0] == "deals_history":
         deals = Deal.objects.raw({"owner_id": user.id})
         if not deals:
-            await c.answer("🕸️ Ваша история сделок пуста", show_alert=True)
+            await c.answer("🕸️ Ваша история свапов пуста", show_alert=True)
             return
         
-        await c.message.edit_text("📊 Ваша история сделок:", reply_markup=Keyboards.Deals.user_deals_history(deals))
+        await c.message.edit_text("📊 Ваша история свапов:", reply_markup=Keyboards.Deals.user_deals_history(deals))
     if actions[0] == "actual_rates":
-        
+        is_demo = actions[-1] == "demo"
         await c.message.edit_text("⭐ Актуальные курсы валют ниже\n\n"
-                                  + get_rates_text(), reply_markup=Keyboards.actual_rates())
+                                  + get_rates_text(), reply_markup=Keyboards.actual_rates() if not is_demo else None)
         #await c.answer("🧠 В разработке", show_alert=True)
     if actions[0] == "deal_calc":
         
@@ -41,7 +41,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
             return
         
         await c.message.edit_text(f"💠 Свап <code>{deal.id}</code>\n\n"
-                                  f"🚦 Статус: <code>{deal.status}</code>\n"
+                                  f"🚦 Статус: <code>{BOT_TEXTS.verbose[deal.status]}</code>\n"
                                   f"💱 Направление: <code>{deal.currency_symbol_from}</code> ➡️ <code>{deal.currency_symbol_to}</code>\n"
                                   f"📅 Дата создания: <code>{str(deal.created_at)[:-7]}</code>\n", 
                                   reply_markup=Keyboards.Deals.deal_info(user, deal))

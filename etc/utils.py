@@ -1,3 +1,4 @@
+from pymongo import DESCENDING
 import datetime
 from typing import List
 import loguru
@@ -12,6 +13,7 @@ from pymodm import MongoModel
 
 def rate_to_str(c1, c2, rate, postfix=""):
     return f"1 {c2}{postfix} = {rate} {c1}"
+
 
 async def notifyAdmins(text: str):
     admins: List[TgUser] = TgUser.objects.raw({"is_admin": True})
@@ -51,16 +53,18 @@ def get_rates_text():
 
     return rates_text
 
-from pymongo import DESCENDING
+
 def get_max_id_doc(model: MongoModel, condition={}):
     try:
         # Сортируем в обратном порядке (так получим максимальный id) и выбираем первый элемент
-        max_id_document = model.objects.raw(condition).order_by([('_id', DESCENDING)]).first()
+        max_id_document = model.objects.raw(
+            condition).order_by([('_id', DESCENDING)]).first()
         max_id = max_id_document
     except model.DoesNotExist:
         # Если нет такого элемента, возвращаем None
         max_id = None
     return max_id
+
 
 def find_next_month(date: datetime.datetime):
     # Получаем текущий месяц
@@ -79,14 +83,19 @@ def find_next_month(date: datetime.datetime):
     # Возвращаем следующий месяц
     return datetime.datetime(next_year, next_month, 1, 0, 0, 0, 0)
 
+
 def find_month_start(date: datetime.datetime):
     # Получаем текущую дату
     current_date = datetime.datetime.now()
 
     # Получаем первый день текущего месяца
-    first_day = datetime.datetime(current_date.year, current_date.month, 1, 0, 0, 0, 0)
+    first_day = datetime.datetime(
+        current_date.year, current_date.month, 1, 0, 0, 0, 0)
 
     return first_day
 
+
 def gen_deal_ext_id(deal: Deal):
-    return f"{deal.created_at.month:02}{deal.external_id:02}"
+    date = deal.created_at if deal.created_at else datetime.datetime(
+        1970, 1, 1, 0, 0)
+    return f"{date.month:02}{deal.external_id:02}"
