@@ -3,6 +3,7 @@ from pymongo.write_concern import WriteConcern
 
 class Currency(MongoModel):
     id = fields.IntegerField(primary_key=True)
+    types = fields.ListField(fields.CharField(default="ФИЗЛИЦО"), blank=True)
     is_crypto = fields.BooleanField(default=False)
     symbol = fields.CharField(blank=False)
     verbose_name = fields.CharField(blank=True)
@@ -14,15 +15,15 @@ class Currency(MongoModel):
         write_concern = WriteConcern(j=True)
         connection_alias = 'pymodm-conn'
         collection_name = 'Currencies'
+
         
-        
-# cc = Currency(1, False, "BAT", "BAT", True, 1.0, 0)
-# cc.save()
-# cc = Currency(2, False, "RUB", "RUB", True, 1.0, 0)
-# cc.save()
-# cc = Currency(3, False, "CNY", "CNY", True, 1.0, 0)
-# cc.save()
-# cc = Currency(4, False, "USD", "USD", True, 1.0, 0)
-# cc.save()
-# cc = Currency(5, True, "USDT", "USDT", True, 1.0, 0)
-# cc.save()
+cc = Currency(1, ["Физлицо"], False, "BAT", "BAT", True, 1.0, 0)
+cc.save()
+cc = Currency(2, [], False, "RUB", "RUB", True, 1.0, 0)
+cc.save()
+cc = Currency(3, ["Физлицо", "Алим", "Вичат", "Юрлицо"], False, "CNY", "CNY", True, 1.0, 0)
+cc.save()
+cc = Currency(4, ["Юрлицо Китай", "Юрлицо Гк"], False, "USD", "USD", True, 1.0, 0)
+cc.save()
+cc = Currency(5, [], True, "USDT", "USDT", True, 1.0, 0)
+cc.save()

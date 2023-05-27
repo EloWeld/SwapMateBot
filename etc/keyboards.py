@@ -52,23 +52,42 @@ class Keyboards:
                 k.row(IButton(f"Купить {currency.symbol}", callback_data=f"|currency_pool:buy:{currency.id}"))
                 k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:my_currencies"))
                 return k
+            
+            def choose_currency_to_buy_from(currencies: List[Currency]):
+                k = IKeyboard()
+                for currency in currencies:
+                    k.row(IButton(f"За {currency.symbol}", callback_data=f"|buy_currecny:choose_source:{currency.id}"))
+                k.row(IButton(BOT_TEXTS.Cancel, callback_data=f"|admin:my_currencies"))
+                return k
+                
                 
                 
             
     # Calc class
     class Calc:
-        def main(selected_from=None, selected_to=None):
+        def main(selected_from=None, selected_to=None, selected_from_type=None, selected_to_type=None,):
             k = IKeyboard()
             currencies: List[Currency] = Currency.objects.raw({"is_available": True})
             for currency in currencies:
-                k.row()
-                f = selected_from.symbol if selected_from else None
-                t = selected_to.symbol if selected_to else None
-                k.insert(IButton(f"{currency.symbol}" if f != currency.symbol else f"✅ {currency.symbol}", callback_data=f"|deal_calc:sel_from:{currency.symbol}"))
-                k.insert(IButton(f"{currency.symbol}" if t != currency.symbol else f"✅ {currency.symbol}", callback_data=f"|deal_calc:sel_to:{currency.symbol}"))
+                if currency.types == []:
+                    k.row()
+                    f = selected_from.symbol if selected_from else None
+                    t = selected_to.symbol if selected_to else None
+                    k.insert(IButton(f"{currency.symbol}" if f != currency.symbol else f"✅ {currency.symbol}", callback_data=f"|deal_calc:sel_from:{currency.symbol}"))
+                    k.insert(IButton(f"{currency.symbol}" if t != currency.symbol else f"✅ {currency.symbol}", callback_data=f"|deal_calc:sel_to:{currency.symbol}"))
+                else:
+                    for ctype in currency.types:
+                        k.row()
+                        f = selected_from.symbol+selected_from_type if selected_from and selected_from_type else None
+                        t = selected_to.symbol+selected_to_type if selected_to and selected_to_type else None
+                        k.insert(IButton(f"{currency.symbol} ({ctype})" if f != currency.symbol+ctype else f"✅ {currency.symbol} ({ctype})", callback_data=f"|deal_calc:sel_from:{currency.symbol}:{ctype}"))
+                        k.insert(IButton(f"{currency.symbol} ({ctype})" if t != currency.symbol+ctype else f"✅ {currency.symbol} ({ctype})", callback_data=f"|deal_calc:sel_to:{currency.symbol}:{ctype}"))
+                    
                 
             if selected_from and selected_to and selected_from != selected_to:
                 k.row(IButton(BOT_TEXTS.Continue, callback_data=f"|deal_calc:start_deal"))
+            if selected_from and selected_to and selected_from_type and selected_to_type and selected_from == selected_to:
+                k.row(IButton("⛔", callback_data=f"|deal_calc:can_start_that_deal"))
                 
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|main"))
             
@@ -84,7 +103,7 @@ class Keyboards:
         def user_deals_history(deals: List[Deal]):
             k = IKeyboard()
             for deal in deals:
-                k.row(IButton(f"Сделка #{deal.id} | {deal.currency_symbol_from}🠖{deal.currency_symbol_to} | {str(deal.created_at)[:10]}", 
+                k.row(IButton(f"{deal.external_id} | {deal.currency_symbol_from} > {deal.currency_symbol_to}", 
                               callback_data=f"|convertor:see_deal:{deal.id}"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data="|main"))
             return k

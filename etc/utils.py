@@ -1,9 +1,12 @@
+import datetime
 from typing import List
 import loguru
+import pymodm
 import requests
 from loader import MDB, bot
 from models.etc import Currency
 from models.tg_user import TgUser
+from pymodm import MongoModel
 
 
 def rate_to_str(c1, c2, rate, postfix=""):
@@ -33,7 +36,6 @@ def split_long_text(text: str, max_length: int = 4000):
 
 
 def get_rates_text():
-
     currencies: List[Currency] = Currency.objects.raw({"is_available": True})
     rates_text = ""
     for currency in currencies:
@@ -47,3 +49,40 @@ def get_rates_text():
         f"{rate_to_str('RUB', 'USD', round(1/r['USD'], 4))}\n"
 
     return rates_text
+
+
+def get_max_id_doc(model: MongoModel, condition={}):
+    try:
+        # Сортируем в обратном порядке (так получим максимальный id) и выбираем первый элемент
+        max_id_document = model.objects.raw(condition).order_by([('_id', 1)]).first()
+        max_id = max_id_document.id
+    except model.DoesNotExist:
+        # Если нет такого элемента, возвращаем 0
+        max_id = 0
+    return max_id
+
+def find_next_month(date: datetime.datetime):
+    # Получаем текущий месяц
+    current_month = date.month
+
+    # Получаем следующий месяц
+    next_month = current_month + 1
+
+    # Проверяем, если следующий месяц больше 12, то переходим на следующий год
+    if next_month > 12:
+        next_month = 1
+        next_year = date.year + 1
+    else:
+        next_year = date.year
+
+    # Возвращаем следующий месяц
+    return datetime.datetime(next_year, next_month, 1, 0, 0, 0, 0)
+
+def find_month_start(date: datetime.datetime):
+    # Получаем текущую дату
+    current_date = datetime.datetime.now()
+
+    # Получаем первый день текущего месяца
+    first_day = datetime.datetime(current_date.year, current_date.month, 1, 0, 0, 0, 0)
+
+    return first_day

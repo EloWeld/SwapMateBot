@@ -3,4 +3,6 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 class AdminInputStates(StatesGroup):
     SendReceipt = State()
     ChangeRate = State()
-    BuyCurrency = State()
+    BuyCurrencyTargetAmount = State()
+    BuyCurrencySourceType = State()
+    BuyCurrencySourceAmount = State()

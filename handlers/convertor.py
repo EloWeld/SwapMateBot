@@ -31,7 +31,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         #await c.answer("🧠 В разработке", show_alert=True)
     if actions[0] == "deal_calc":
         
-        await c.message.edit_text("1️⃣Выберите валюту которую хотите ОБМЕНЯТЬ в левой колонке\n\n2️⃣Выберите валюту которую хотите ПОЛУЧИТЬ в правой колонке", 
+        await c.message.edit_text("1️⃣ Выберите то, что отдаёте в левой колонке\n\n2️⃣ Выберите то, что получаете в правой колонке", 
                                   reply_markup=Keyboards.Calc.main(stateData.get('sel_from', None), stateData.get('sel_to', None)))
     if actions[0] == "see_deal":
         try:
@@ -42,7 +42,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         
         await c.message.edit_text(f"💠 Сделка <code>{deal.id}</code>\n\n"
                                   f"🚦 Статус: <code>{deal.status}</code>\n"
-                                  f"💱 Направление: <code>{deal.currency_symbol_from}</code>🠖<code>{deal.currency_symbol_to}</code>\n"
+                                  f"💱 Направление: <code>{deal.currency_symbol_from}</code> ➡️ <code>{deal.currency_symbol_to}</code>\n"
                                   f"📅 Дата создания: <code>{str(deal.created_at)[:-7]}</code>\n", 
                                   reply_markup=Keyboards.Deals.deal_info(user, deal))
         
