@@ -17,11 +17,14 @@ async def _(m:Message, state:FSMContext=None):
     user.fullname = m.from_user.full_name
     user.username = m.from_user.username
     user.save()
-    
-    await m.answer("Hello!", reply_markup=Keyboards.start_menu(user))
-    await bot.set_my_commands([
-        BotCommand("start", "Перезапуск бота")
-    ], scope=BotCommandScopeAllPrivateChats())
+
+    if user.is_member:
+        await m.answer("💠 Главное меню", reply_markup=Keyboards.start_menu(user))
+        await bot.set_my_commands([
+            BotCommand("start", "Перезапуск бота")
+        ], scope=BotCommandScopeAllPrivateChats())
+    else:
+        await m.answer("🚀 Добро пожаловать в бота! Для продолжения заполните заявку.", reply_markup=Keyboards.Identify.start_identify())
     
 
 

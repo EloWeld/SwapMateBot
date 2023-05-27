@@ -4,6 +4,7 @@ import loguru
 import pymodm
 import requests
 from loader import MDB, bot
+from models.deal import Deal
 from models.etc import Currency
 from models.tg_user import TgUser
 from pymodm import MongoModel
@@ -50,15 +51,15 @@ def get_rates_text():
 
     return rates_text
 
-
+from pymongo import DESCENDING
 def get_max_id_doc(model: MongoModel, condition={}):
     try:
         # Сортируем в обратном порядке (так получим максимальный id) и выбираем первый элемент
-        max_id_document = model.objects.raw(condition).order_by([('_id', 1)]).first()
-        max_id = max_id_document.id
+        max_id_document = model.objects.raw(condition).order_by([('_id', DESCENDING)]).first()
+        max_id = max_id_document
     except model.DoesNotExist:
-        # Если нет такого элемента, возвращаем 0
-        max_id = 0
+        # Если нет такого элемента, возвращаем None
+        max_id = None
     return max_id
 
 def find_next_month(date: datetime.datetime):
@@ -86,3 +87,6 @@ def find_month_start(date: datetime.datetime):
     first_day = datetime.datetime(current_date.year, current_date.month, 1, 0, 0, 0, 0)
 
     return first_day
+
+def gen_deal_ext_id(deal: Deal):
+    return f"{deal.created_at.month:02}{deal.external_id:02}"

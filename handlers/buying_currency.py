@@ -25,15 +25,15 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
         source_currency = Currency.objects.get({"symbol": m.text.split()[3]})
         source_amount = float(m.text.split()[4])
         
-        # Вычисляем курс обмена
+        # Вычисляем курс свапа
         exchange_rate = 1/ (target_amount / source_amount)
         
         await state.finish()
         
-        await m.answer(f"💱 Вы совершили обмен <code>{source_amount}</code> <code>{source_currency.symbol}</code> ➡️ <code>{target_amount}</code> <code>{target_currency.symbol}</code>\n\n"
+        await m.answer(f"💱 Вы совершили свап <code>{source_amount}</code> <code>{source_currency.symbol}</code> ➡️ <code>{target_amount}</code> <code>{target_currency.symbol}</code>\n\n"
                     f"Курс 1 {target_currency.symbol} = {exchange_rate} {source_currency.symbol}")
-        
-        bc = BuyingCurrency(id=get_max_id_doc(BuyingCurrency)+1,
+        max_id_doc = get_max_id_doc(BuyingCurrency)
+        bc = BuyingCurrency(id=max_id_doc.id + 1 if max_id_doc else 0,
                         owner=user.id,
                     source_currency=source_currency,
                     source_amount=source_amount,
@@ -101,17 +101,18 @@ async def _(m: Message, state: FSMContext, user: TgUser = None):
     stateData['target_currency'].pool_balance += amount
     stateData['target_currency'].save()
     
-    # Вычисляем курс обмена
+    # Вычисляем курс свапа
     source_amount = float(stateData['source_amount'])
     target_amount = float(stateData['target_amount'])
     exchange_rate = 1/ (target_amount / source_amount)
     
     await state.finish()
     
-    await m.answer(f"💱 Вы совершили обмен <code>{stateData['source_amount']}</code> <code>{stateData['source_currency'].symbol}</code> ➡️ <code>{stateData['target_amount']}</code> <code>{stateData['target_currency'].symbol}</code>\n\n"
+    await m.answer(f"💱 Вы совершили свап <code>{stateData['source_amount']}</code> <code>{stateData['source_currency'].symbol}</code> ➡️ <code>{stateData['target_amount']}</code> <code>{stateData['target_currency'].symbol}</code>\n\n"
                    f"Курс 1 {stateData['target_currency'].symbol} = {exchange_rate} {stateData['source_currency'].symbol}")
     
-    bc = BuyingCurrency(id=get_max_id_doc(BuyingCurrency)+1,
+    max_id_doc = get_max_id_doc(BuyingCurrency)
+    bc = BuyingCurrency(id=max_id_doc+1 if max_id_doc else 0,
                     owner=user.id,
                    source_currency=stateData['source_currency'],
                    source_amount=stateData['source_amount'],

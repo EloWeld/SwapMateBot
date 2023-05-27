@@ -1,4 +1,5 @@
 from etc.texts import BOT_TEXTS
+from etc.utils import gen_deal_ext_id
 from models.deal import Deal
 from models.etc import Currency
 from models.tg_user import TgUser
@@ -10,8 +11,22 @@ from aiogram.types import \
     InlineKeyboardButton as IButton
     
 class Keyboards:
-    
+    class Identify:
+        @staticmethod
+        def start_identify():
+            k = IKeyboard()
+            k.row(IButton("💠 Приступить", callback_data="|identify:start"))
+            return k
+        
+        @staticmethod
+        def choose_city(cities: List[str]):
+            k = IKeyboard(row_width=2)
+            for city in cities:
+                k.insert(IButton(city, callback_data=f"|identify:choose_city:{city}"))
+            return k
+        
     class Admin:
+        @staticmethod
         def dealsTypes(deals: List[Deal]):
             a_delas_count = len([x for x in deals if x.status == "ACTIVE"])
             c_delas_count = len([x for x in deals if x.status == "CANCELLED"])
@@ -24,14 +39,14 @@ class Keyboards:
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
             
             return k
-        
+        @staticmethod
         def deals(deals: List[Deal]):
             k = IKeyboard()
             for deal in deals:
-                k.row(IButton(f"Сделка от {str(deal.created_at)[:-7]}", callback_data=f"|convertor:see_deal:{deal.id}"))
+                k.row(IButton(f"{gen_deal_ext_id(deal)} | {deal.currency_symbol_from} > {deal.currency_symbol_to}", callback_data=f"|convertor:see_deal:{deal.id}"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
             return k
-        
+        @staticmethod
         def choose_currency_to_change_rate(currencies: List[Currency]):
             k = IKeyboard()
             for currency in currencies:
@@ -40,19 +55,20 @@ class Keyboards:
             return k
         
         class Currencies:
+            @staticmethod
             def all_pool_currencies(currencies: List[Currency]):
                 k = IKeyboard()
                 for currency in currencies:
                     k.row(IButton(currency.symbol, callback_data=f"|currency_pool:main:{currency.id}"))
                 k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
                 return k
-            
+            @staticmethod
             def currency_actions(currency: Currency):
                 k = IKeyboard()
                 k.row(IButton(f"Купить {currency.symbol}", callback_data=f"|currency_pool:buy:{currency.id}"))
                 k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:my_currencies"))
                 return k
-            
+            @staticmethod
             def choose_currency_to_buy_from(currencies: List[Currency]):
                 k = IKeyboard()
                 for currency in currencies:
@@ -65,6 +81,7 @@ class Keyboards:
             
     # Calc class
     class Calc:
+        @staticmethod
         def main(selected_from=None, selected_to=None, selected_from_type=None, selected_to_type=None,):
             k = IKeyboard()
             currencies: List[Currency] = Currency.objects.raw({"is_available": True})
@@ -92,22 +109,24 @@ class Keyboards:
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|main"))
             
             return k
-                
-        def dealRequestDone():
+        @staticmethod
+        def deal_request_done():
             k = IKeyboard()
             k.insert(IButton(BOT_TEXTS.Cancel, callback_data="|deal_calc:cancel_deal"))
             k.insert(IButton(BOT_TEXTS.SendDeal, callback_data="|deal_calc:send_deal"))
             return k
         
     class Deals:
+        @staticmethod
         def user_deals_history(deals: List[Deal]):
             k = IKeyboard()
             for deal in deals:
-                k.row(IButton(f"{deal.external_id} | {deal.currency_symbol_from} > {deal.currency_symbol_to}", 
+                k.row(IButton(f"{gen_deal_ext_id(deal)} | {deal.currency_symbol_from} > {deal.currency_symbol_to}", 
                               callback_data=f"|convertor:see_deal:{deal.id}"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data="|main"))
             return k
         
+        @staticmethod
         def deal_info(user: TgUser, deal: Deal):
             k = IKeyboard()
             if user.is_admin:
@@ -118,7 +137,7 @@ class Keyboards:
             k.row(IButton(BOT_TEXTS.BackButton, callback_data="|convertor:deals_history"))
             return k
             
-            
+    @staticmethod
     def start_menu(user: TgUser):
         k = IKeyboard()
         if user.is_admin:
@@ -128,7 +147,8 @@ class Keyboards:
         k.row(IButton(BOT_TEXTS.DealsHistory, callback_data="|convertor:deals_history"))
         
         return k
-    
+        
+    @staticmethod
     def admin_menu(user: TgUser):
         k = IKeyboard()
         if user.is_admin:
@@ -138,14 +158,16 @@ class Keyboards:
             k.row(IButton(BOT_TEXTS.MyRates, callback_data="|admin:my_rates"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|main"))
         return k
-    
+        
+    @staticmethod
     def actual_rates():
         k = IKeyboard()
         k.row(IButton(BOT_TEXTS.FoundCheaper, callback_data="|convertor:found_cheaper"))
         k.row(IButton(BOT_TEXTS.BackButton, callback_data="|main"))
         
         return k
-    
+        
+    @staticmethod
     def back(path: str):
         k = IKeyboard()
         k.row(IButton(BOT_TEXTS.BackButton, callback_data=path))

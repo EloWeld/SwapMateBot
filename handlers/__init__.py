@@ -4,3 +4,4 @@ from .admin import *
 from .user import *
 from .deal import *
 from .buying_currency import *
+from .identify import *

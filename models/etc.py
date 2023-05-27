@@ -27,3 +27,23 @@ cc = Currency(4, ["Юрлицо Китай", "Юрлицо Гк"], False, "USD",
 cc.save()
 cc = Currency(5, [], True, "USDT", "USDT", True, 1.0, 0)
 cc.save()
+
+
+class City(MongoModel):
+    id = fields.CharField(primary_key=True)
+    name = fields.CharField(blank=False, default="Другой")
+    
+    class Meta:
+        write_concern = WriteConcern(j=True)
+        connection_alias = 'pymodm-conn'
+        collection_name = 'City'
+
+
+cy = City(id="Moscow", name="Москва")
+cy.save()
+
+cy = City(id="Kransnoyarsk", name="Красноярск")
+cy.save()
+
+cy = City(id="Sochi", name="Сочи")
+cy.save()

@@ -8,8 +8,8 @@ class Deal(MongoModel):
     deal_value = fields.FloatField()
     currency_symbol_from = fields.CharField(blank=False)
     currency_symbol_to = fields.CharField(blank=False)
-    currency_type_from = fields.CharField(blank=False)
-    currency_type_to = fields.CharField(blank=False)
+    currency_type_from = fields.CharField(blank=True)
+    currency_type_to = fields.CharField(blank=True)
     owner_id = fields.IntegerField(blank=False)
     status = fields.CharField(choices=["ACTIVE", "CANCELLED", "FINISHED"], default="ACTIVE")
     

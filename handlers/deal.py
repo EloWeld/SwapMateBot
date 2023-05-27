@@ -50,12 +50,12 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
     if actions[0] == "cancel_deal":
         selFrom: Currency = stateData.get('sel_from')
         selTo: Currency = stateData.get('sel_to')
-        await c.message.edit_text(f"❌ Сделка <b>{selFrom.symbol}</b> ➡️ <b>{selTo.symbol}</b> отменена", reply_markup=Keyboards.back('|main'))
+        await c.message.edit_text(f"❌ Свап <b>{selFrom.symbol}</b> ➡️ <b>{selTo.symbol}</b> отменён", reply_markup=Keyboards.back('|main'))
         await state.finish()
  
     if actions[0] == "start_deal":
         selFrom: Currency = stateData.get('sel_from')
-        await c.message.edit_text(f"📈 Введите объём средств для обмена в <b>{selFrom.symbol}</b>", reply_markup=Keyboards.back('|convertor:deal_calc'))
+        await c.message.edit_text(f"📈 Введите объём средств для свапа в <b>{selFrom.symbol}</b>", reply_markup=Keyboards.back('|convertor:deal_calc'))
         await state.set_state("deal_calc_value")
         
     if actions[0] == "can_start_that_deal":
@@ -66,11 +66,13 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
         selFrom: Currency = stateData.get('sel_from')
         selTo: Currency = stateData.get('sel_to')
         deal_value: float = stateData.get('deal_value')
-        maxIDDeal: Deal = get_max_id_doc(Deal, {"created_at": {"$lt": find_next_month(datetime.datetime.now()),
+        maxIDDeal = get_max_id_doc(Deal)
+        maxExtIDDeal: Deal = get_max_id_doc(Deal, {"created_at": {"$lt": find_next_month(datetime.datetime.now()),
                                                                   "$gt": find_month_start(datetime.datetime.now())}})
-        maxIDDealExtID = maxIDDeal.external_id + 1 if maxIDDeal and hasattr(maxIDDeal, 'external_id') else 0
-        d = Deal(random.randint(0, 999999999),
-                 external_id=maxIDDealExtID,
+        maxExtIDDealID = maxExtIDDeal.external_id + 1 if maxExtIDDeal else 0
+        maxIDDealID = maxExtIDDeal.id + 1 if maxIDDeal else 0
+        d = Deal(maxIDDealID,
+                 external_id=maxExtIDDealID,
                  deal_value=deal_value,
                  owner_id=user.id,
                  currency_symbol_from=selFrom.symbol,
@@ -96,11 +98,13 @@ async def _(m: Message, state: FSMContext = None):
 
     selFrom: Currency = stateData.get('sel_from')
     selTo: Currency = stateData.get('sel_to')
-    selFromType: Currency = stateData.get('sel_from_type', '')
-    selToType: Currency = stateData.get('sel_to_type', '')
+    selFromType: Currency = stateData.get('sel_from_type', None)
+    selToType: Currency = stateData.get('sel_to_type', None)
+    selFromType = '' if selFromType is None else selFromType
+    selToType = '' if selToType is None else selToType
 
     await state.update_data(deal_value=deal_value)
 
-    await m.answer("⭐ Заявка на обмен готова! Подтвердите нажатием кнопки\n\n"
+    await m.answer("⭐ Заявка на свап готова! Подтвердите нажатием кнопки\n\n"
                    f"<b>{selFrom.symbol} {selFromType}</b> ➡️ <b>{selTo.symbol} {selToType}</b>\n"
-                   f"Объём: <b>{deal_value}</b>\n", reply_markup=Keyboards.Calc.dealRequestDone())
+                   f"Объём: <b>{deal_value}</b>\n", reply_markup=Keyboards.Calc.deal_request_done())

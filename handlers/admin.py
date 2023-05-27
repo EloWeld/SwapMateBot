@@ -70,7 +70,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         try:
             deal = Deal.objects.get({"_id": int(actions[1])})
         except Deal.DoesNotExist:
-            await c.answer(f"Не могу найти сделку #{actions[1]}")
+            await c.answer(f"Не могу найти свап #{actions[1]}")
             return
         
         await c.message.edit_text("🧾 Приложите чек для отправки", reply_markup=Keyboards.back('|main'))
@@ -141,8 +141,8 @@ async def _(m: Message, state: FSMContext = None):
     
     # Send the photo to deal owner user
     try:
-        await bot.send_photo(deal.owner_id, file_id, caption=f"✨ Ваш чек по сделке <code>#{deal.id}</code>")
-        await m.answer(f"📤 Чек сделке  <code>{deal.id}</code> отправлен <a href='tg://user?id={deal.owner_id}'>пользователю</a>")
+        await bot.send_photo(deal.owner_id, file_id, caption=f"✨ Ваш чек по свапу <code>#{deal.id}</code>")
+        await m.answer(f"📤 Чек свапу  <code>{deal.id}</code> отправлен <a href='tg://user?id={deal.owner_id}'>пользователю</a>")
     except Exception as e:
         await m.answer(f"❌ Не удалось отправить чек пользователю из-за ошибки <code>{str(e)}</code>")
         

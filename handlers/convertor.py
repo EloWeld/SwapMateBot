@@ -37,10 +37,10 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         try:
             deal: Deal = Deal.objects.get({"_id": int(actions[1])})
         except Deal.DoesNotExist as e:
-            await c.answer(f"❌ Сделка #{actions[1]} не найдена", show_alert=True)
+            await c.answer(f"❌ Свап #{actions[1]} не найден", show_alert=True)
             return
         
-        await c.message.edit_text(f"💠 Сделка <code>{deal.id}</code>\n\n"
+        await c.message.edit_text(f"💠 Свап <code>{deal.id}</code>\n\n"
                                   f"🚦 Статус: <code>{deal.status}</code>\n"
                                   f"💱 Направление: <code>{deal.currency_symbol_from}</code> ➡️ <code>{deal.currency_symbol_to}</code>\n"
                                   f"📅 Дата создания: <code>{str(deal.created_at)[:-7]}</code>\n", 
