@@ -31,7 +31,7 @@ class ConstantsMetaClass(type):
         doc = MDB.Settings.find_one(dict(id="Constants"))
         if not doc:
             MDB.Settings.insert_one(dict(id="Constants"))
-            doc = MDB.Settings.find_one(dict(id="Constants"))
+            doc: dict = MDB.Settings.find_one(dict(id="Constants"))
         # If key in constants
         if key in doc:
             return doc[key]

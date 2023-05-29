@@ -14,7 +14,7 @@ from models.tg_user import TgUser
 
 # Text
 def get_profile_text(user: TgUser):
-    swap_count = Deal.objects.raw({"owner_id": user.id}).count()
+    swap_count = Deal.objects.raw({"owner": user.id}).count()
     main_text = f"💠 Ваш профиль 💠\n\n" \
         f"🙂 Имя: <code>{user.real_name}</code>\n" \
         f"🏘️ Город <code>{user.city.name}</code>\n" \

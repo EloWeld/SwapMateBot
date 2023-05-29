@@ -14,7 +14,7 @@ from etc.keyboards import Keyboards
 from aiogram.dispatcher.filters import Text
 
 async def send_slave_user(receiver_user: TgUser, user: TgUser, edit_message: Union[Message, None] = None):
-    swap_count = Deal.objects.raw({"owner_id": user.id}).count()
+    swap_count = Deal.objects.raw({"owner": user.id}).count()
     main_text = f"💠 Профиль {user.id} @{user.username} {user.fullname} 💠\n\n" \
         f"🙂 Имя: <code>{user.real_name}</code>\n" \
         f"🏘️ Город <code>{user.city.name}</code>\n" \

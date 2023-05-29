@@ -16,17 +16,20 @@ class Currency(MongoModel):
         connection_alias = 'pymodm-conn'
         collection_name = 'Currencies'
 
+    def rate_with(self, sub: 'Currency'):
+        return 1 / ( self.rub_rate / sub.rub_rate)
+
         
-cc = Currency(1, ["Физлицо"], False, "BAT", "BAT", True, 1.0, 0)
-cc.save()
-cc = Currency(2, [], False, "RUB", "RUB", True, 1.0, 0)
-cc.save()
-cc = Currency(3, ["Физлицо", "Алим", "Вичат", "Юрлицо"], False, "CNY", "CNY", True, 1.0, 0)
-cc.save()
-cc = Currency(4, ["Юрлицо Китай", "Юрлицо Гк"], False, "USD", "USD", True, 1.0, 0)
-cc.save()
-cc = Currency(5, [], True, "USDT", "USDT", True, 1.0, 0)
-cc.save()
+# cc = Currency(1, ["Физлицо"], False, "BAT", "BAT", True, 1.0, 0)
+# cc.save()
+# cc = Currency(2, [], False, "RUB", "RUB", True, 1.0, 0)
+# cc.save()
+# cc = Currency(3, ["Физлицо", "Алим", "Вичат", "Юрлицо"], False, "CNY", "CNY", True, 1.0, 0)
+# cc.save()
+# cc = Currency(4, ["Юрлицо Китай", "Юрлицо Гк"], False, "USD", "USD", True, 1.0, 0)
+# cc.save()
+# cc = Currency(5, [], True, "USDT", "USDT", True, 1.0, 0)
+# cc.save()
 
 
 class City(MongoModel):

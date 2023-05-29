@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 import json
 
+
 class BotTexts(BaseModel):
     AdminMenuBtn = "🛡️ Админка 🛡️"
     SetExchangeRates = "🔄 Установить курсы"
@@ -9,39 +10,42 @@ class BotTexts(BaseModel):
     MyRates = "📈 Мои курсы"
     MyUsers = "👥 Пользователи"
     Profile = "👩🏻‍💻 Профиль"
-    
-    
+
     DealCalc = "📊 Калькулятор свапов"
     DealsHistory = "🗄 История свапов"
     ActualRates = "⭐️ Актуальные курсы"
-    
+
     BackButton = "🔙 Назад"
     Continue = "🏁 Продолжить"
     Previous = "⬅"
     Next = "➡"
-    
+
     InvalidValue = "❗ Некорректное значение"
-    
+
     SendDeal = "✅ Отправить"
-    Cancel="❌ Отменить"
-    
+    Cancel = "❌ Отменить"
+    AddInfo = "📝 Добавить доп. информацию"
+
     SendReceipt = "🧾 ОТПРАВИТЬ ЧЕК"
     Finish = "🏁 Завершить"
     FoundCheaper = "📈 Нашёл дешевле!"
 
+    SuggestRate = "💡 Предложить курс"
+
     verbose_emoji = {
-        "CANCELLED": "⛔", 
-        "ACTIVE": "⏳", 
+        "CANCELLED": "⛔",
+        "ACTIVE": "⏳",
         "FINISHED": "🏁"
     }
 
     verbose = {
         True: "Да",
         False: "Нет",
-        "CANCELLED": "Отменённая", 
-        "ACTIVE": "Активная", 
+        "CANCELLED": "Отменённая",
+        "ACTIVE": "Активная",
         "FINISHED": "Завершённая"
     }
+
 
 # Создаем экземпляр класса
 BOT_TEXTS = BotTexts()

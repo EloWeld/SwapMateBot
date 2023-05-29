@@ -13,6 +13,9 @@ from models.tg_user import TgUser
 from etc.keyboards import Keyboards
 from aiogram.dispatcher.filters import Text
 
+from services.sheets_api import GoogleSheetsService
+from services.sheets_syncer import SheetsSyncer
+
 async def send_currencies(message: Message, is_edit = False):
     currencies: List[Currency] = Currency.objects.raw({"is_available": True})
     c_text = ""
@@ -52,8 +55,31 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         await c.message.edit_text("💎 Выберите тип свапов", reply_markup=Keyboards.Admin.dealsTypes(deals))
         
     
-    if actions[0] == "my_rates":
-        await c.answer("Без понятия что тут должно быть", show_alert=True)
+    if actions[0] == "accept_rate":
+        deal: Deal = Deal.objects.get({"_id": int(actions[1])})
+        rate = float(actions[2])
+
+        deal.rate = rate
+        deal.save()
+
+        text = f"✅ Предлжение изменения курса сделки <code>#{deal.id}</code> на <b>{rate}</b> одобрено"
+        await c.message.edit_text(text)
+        await bot.send_message(deal.owner.id, text)
+
+    if actions[0] == "change_rate":
+        deal: Deal = Deal.objects.get({"_id": int(actions[1])})
+        await c.message.answer(f"✏️ Введите новое значене курса для сделки <code>#{deal.id}</code> <b>{deal.dir_text()}</b>")
+        await AdminInputStates.ChangeDealRate.set()
+        await state.update_data(deal=deal)
+        await c.answer()
+
+    if actions[0] == "decline_rate":
+        deal: Deal = Deal.objects.get({"_id": int(actions[1])})
+        rate = float(actions[2])
+
+        text = f"⛔ Предлжение изменения курса сделки <code>#{deal.id}</code> на <b>{rate}</b> отклонено"
+        await c.message.edit_text(text)
+        await bot.send_message(deal.owner.id, text)
         
     if actions[0] == "deals_with_status":
         status = actions[1]
@@ -63,7 +89,23 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
 
         await c.message.edit_text(f"💎 Ниже список свапов со статусом {verbose_status}", reply_markup=Keyboards.Admin.deals(deals))
         
-    
+    if actions[0] == "see_deal":
+        try:
+            deal: Deal = Deal.objects.get({"_id": int(actions[1])})
+        except Deal.DoesNotExist as e:
+            await c.answer(f"❌ Свап #{actions[1]} не найден", show_alert=True)
+            return
+        
+        deal.owner = TgUser.objects.get({"_id": deal.owner.id})
+        await c.message.edit_text(f"💠 Свап <code>#{deal.id}</code>\n\n"
+                                  f"🙂 Пользователь: <a href='tg://user?id={deal.owner.id}'>{deal.owner.username}</a>\n"
+                                  f"🚦 Статус: <code>{BOT_TEXTS.verbose[deal.status]}</code>\n"
+                                  f"💱 Направление: <code>{deal.dir_text(remove_currency_type=True)}</code>\n"
+                                  f"💱 Обмен: {deal.dir_text(with_values=True, tag='b')}\n"
+                                  f"💱 Курс: <code>{deal.get_rate_text()}</code>\n"
+                                  f"📝 Дополнительная информация: <b> {deal.additional_info} </b>\n"
+                                  f"📅 Дата создания: <code>{str(deal.created_at)[:-7]}</code>\n", 
+                                  reply_markup=Keyboards.Admin.see_deal(deal))
     if actions[0] == "finish_deal":
         deal: Deal = Deal.objects.get({"_id": int(actions[1])})
 
@@ -72,6 +114,14 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
 
         await c.answer("🏁 Сделка завершена!")
         await c.message.edit_reply_markup(Keyboards.back(f"|admin:deals_with_status:{stateData.get('deals_status', deal.status)}"))
+
+        deal.currency_from.pool_balance += deal.deal_value
+        deal.currency_from.save()
+
+        deal.currency_to.pool_balance -= deal.deal_value * deal.rate
+        deal.currency_to.save()
+
+        SheetsSyncer.sync_deals(user)
 
 
     if actions[0] == "cancel_deal":
@@ -116,6 +166,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         await state.update_data(target_currency=currency)
         # See other in buying_currency.py
 
+
 @dp.message_handler(content_types=[ContentType.TEXT], state=AdminInputStates.ChangeRate)
 async def _(m: Message, state: FSMContext = None):
     # Get currency
@@ -138,6 +189,27 @@ async def _(m: Message, state: FSMContext = None):
     await m.answer("💎 Выберите валюту чтобы установить её курс\n\nТекущие курсы:\n" + get_rates_text(), 
                                 reply_markup=Keyboards.Admin.choose_currency_to_change_rate(currencies))
     
+    
+@dp.message_handler(content_types=[ContentType.TEXT], state=AdminInputStates.ChangeDealRate)
+async def _(m: Message, state: FSMContext = None, user: TgUser = None):
+    # Get deal
+    stateData = await state.get_data()
+    deal: Deal = stateData['deal']
+
+    try:
+        rate = float(m.text.replace(',','.'))
+    except Exception as e:
+        await m.answer(BOT_TEXTS.InvalidValue)
+        return
+
+    deal.rate = rate
+    deal.save()
+
+    await m.answer(f"💱 Курс сделки <code>#{deal.id}</code> изменён на {deal.get_rate_text()}")
+    await bot.send_message(deal.owner.id, f"💱 Курс сделки <code>#{deal.id}</code> изменён на {deal.get_rate_text()}")
+    await state.finish()
+
+
 @dp.message_handler(content_types=[ContentType.PHOTO], state=AdminInputStates.SendReceipt)
 async def _(m: Message, state: FSMContext = None):
     # Get deal
@@ -159,8 +231,8 @@ async def _(m: Message, state: FSMContext = None):
     
     # Send the photo to deal owner user
     try:
-        await bot.send_photo(deal.owner_id, file_id, caption=f"✨ Ваш чек по свапу <code>#{deal.id}</code>")
-        await m.answer(f"📤 Чек свапу  <code>{deal.id}</code> отправлен <a href='tg://user?id={deal.owner_id}'>пользователю</a>")
+        await bot.send_photo(deal.owner.id, file_id, caption=f"✨ Ваш чек по свапу <code>#{deal.id}</code>")
+        await m.answer(f"📤 Чек свапу  <code>{deal.id}</code> отправлен <a href='tg://user?id={deal.owner.id}'>пользователю</a>")
     except Exception as e:
         await m.answer(f"❌ Не удалось отправить чек пользователю из-за ошибки <code>{str(e)}</code>")
         

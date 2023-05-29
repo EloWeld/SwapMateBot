@@ -5,7 +5,7 @@ from models.tg_user import TgUser
 from aiogram.dispatcher import FSMContext
 
 @dp.message_handler(commands="start", state="*")
-async def _(m:Message, state:FSMContext=None):
+async def start_cmd(m:Message, state:FSMContext=None):
     if state:
         await state.finish()
     try:

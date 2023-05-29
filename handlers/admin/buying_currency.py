@@ -14,40 +14,7 @@ from models.buying_currency import BuyingCurrency
 from models.etc import Currency
 from models.tg_user import TgUser
 from etc.keyboards import Keyboards
-
-@dp.message_handler(commands=['buy'], content_types=[ContentType.TEXT], state="*")
-async def _(m: Message, state: FSMContext = None, user: TgUser = None):    
-    try:
-        
-        # Обновляем валюту в бд
-        target_currency = Currency.objects.get({"symbol": m.text.split()[1]})
-        target_amount = float(m.text.split()[2])
-        source_currency = Currency.objects.get({"symbol": m.text.split()[3]})
-        source_amount = float(m.text.split()[4])
-        
-        # Вычисляем курс свапа
-        exchange_rate = 1/ (target_amount / source_amount)
-        
-        await state.finish()
-        
-        await m.answer(f"💱 Вы совершили свап <code>{source_amount}</code> <code>{source_currency.symbol}</code> ➡️ <code>{target_amount}</code> <code>{target_currency.symbol}</code>\n\n"
-                    f"Курс 1 {target_currency.symbol} = {exchange_rate} {source_currency.symbol}")
-        max_id_doc = get_max_id_doc(BuyingCurrency)
-        bc = BuyingCurrency(id=max_id_doc.id + 1 if max_id_doc else 0,
-                        owner=user.id,
-                    source_currency=source_currency,
-                    source_amount=source_amount,
-                    target_currency=target_currency,
-                    target_amount=target_amount,
-                    created_at=datetime.datetime.now(),
-                    exchange_rate=exchange_rate
-                    )
-        bc.save()
-        
-    except Exception as e:
-        await m.answer(BOT_TEXTS.InvalidValue)
-        loguru.logger.error(f"Error while buying currency: {e}; traceback: {traceback.format_exc()}")
-        return
+from services.sheets_syncer import SheetsSyncer
    
 
 @dp.message_handler(content_types=[ContentType.TEXT], state=AdminInputStates.BuyCurrencyTargetAmount)
@@ -96,23 +63,24 @@ async def _(m: Message, state: FSMContext, user: TgUser = None):
 
     # Получаем сохраненные данные из состояния
     stateData = await state.get_data()
-
-    # Обновляем валюту в бд
-    stateData['target_currency'].pool_balance += amount
-    stateData['target_currency'].save()
     
     # Вычисляем курс свапа
     source_amount = float(stateData['source_amount'])
     target_amount = float(stateData['target_amount'])
     exchange_rate = 1/ (target_amount / source_amount)
+
+    # Обновляем валюту в бд
+    stateData['target_currency'].pool_balance += target_amount
+    stateData['target_currency'].save()
     
     await state.finish()
     
     await m.answer(f"💱 Вы совершили свап <code>{stateData['source_amount']}</code> <code>{stateData['source_currency'].symbol}</code> ➡️ <code>{stateData['target_amount']}</code> <code>{stateData['target_currency'].symbol}</code>\n\n"
                    f"Курс 1 {stateData['target_currency'].symbol} = {exchange_rate} {stateData['source_currency'].symbol}")
     
+    
     max_id_doc = get_max_id_doc(BuyingCurrency)
-    bc = BuyingCurrency(id=max_id_doc+1 if max_id_doc else 0,
+    bc = BuyingCurrency(id=max_id_doc.id+1 if max_id_doc else 0,
                     owner=user.id,
                    source_currency=stateData['source_currency'],
                    source_amount=stateData['source_amount'],
@@ -124,4 +92,7 @@ async def _(m: Message, state: FSMContext, user: TgUser = None):
     bc.save()
     
     await send_currencies(m)
+
+    # Update sheets
+    SheetsSyncer.sync_currency_purchases(user)
     

@@ -18,7 +18,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     stateData = {} if state is None else await state.get_data()
     
     if actions[0] == "deals_history":
-        deals = Deal.objects.raw({"owner_id": user.id})
+        deals = Deal.objects.raw({"owner": user.id})
         if not deals:
             await c.answer("🕸️ Ваша история свапов пуста", show_alert=True)
             return
@@ -42,7 +42,9 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         
         await c.message.edit_text(f"💠 Свап <code>{deal.id}</code>\n\n"
                                   f"🚦 Статус: <code>{BOT_TEXTS.verbose[deal.status]}</code>\n"
-                                  f"💱 Направление: <code>{deal.currency_symbol_from}</code> ➡️ <code>{deal.currency_symbol_to}</code>\n"
+                                  f"💱 Направление: <code>{deal.dir_text()}</code>\n"
+                                  f"💱 Обмен: {deal.dir_text(with_values=True, tag='b')}\n"
+                                  f"💱 Курс: <code>1 {deal.currency_from.symbol} = {deal.rate:.4f} {deal.currency_to.symbol}</code>\n"
                                   f"📅 Дата создания: <code>{str(deal.created_at)[:-7]}</code>\n", 
                                   reply_markup=Keyboards.Deals.deal_info(user, deal))
         

@@ -7,6 +7,14 @@ class AdminInputStates(StatesGroup):
     BuyCurrencySourceType = State()
     BuyCurrencySourceAmount = State()
     ChangeUserBalance = State()
+    ChangeDealRate = State()
 
 class IdentifyState(StatesGroup):
     Name = State()
+
+class UserStates(StatesGroup):
+    SuggestRate = State()
+    DealAdditionalInfo = State()
+
+class DealStates(StatesGroup):
+    Value = State()

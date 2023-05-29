@@ -49,6 +49,7 @@ def get_rates_text():
 
     rates_text += f"\nКурс ЦБ:\n"\
         f"{rate_to_str('RUB', 'CNY', round(1/r['CNY'], 4))}\n"\
+        f"{rate_to_str('RUB', 'THB', round(1/r['THB'], 4))}\n"\
         f"{rate_to_str('RUB', 'USD', round(1/r['USD'], 4))}\n"
 
     return rates_text
@@ -93,9 +94,3 @@ def find_month_start(date: datetime.datetime):
         current_date.year, current_date.month, 1, 0, 0, 0, 0)
 
     return first_day
-
-
-def gen_deal_ext_id(deal: Deal):
-    date = deal.created_at if deal.created_at else datetime.datetime(
-        1970, 1, 1, 0, 0)
-    return f"{date.month:02}{deal.external_id:02}"
