@@ -7,9 +7,9 @@ from models.etc import Currency
 def test_calculate_profit_no_buying_currencies(capsys):
     # Test when there are no buying currencies available
     deal = Deal(0, 1, 6069303965, 6069303965, 
-                100, Currency.objects.get({"symbol": "USD"}),
+                20, Currency.objects.get({"symbol": "USDT"}),
                 Currency.objects.get({"symbol": "RUB"}),
-                None, None, "FINISHED", 0.0135, None, datetime.datetime.now()
+                None, None, "FINISHED", 83, None, datetime.datetime.now()
     
     )
     profit = deal.calculate_profit()

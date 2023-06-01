@@ -46,7 +46,7 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
 
     if user and user.is_admin:
         if actions[0] == "discard_user":
-            x_user = TgUser.objects.get({"_id": int(actions[1])})
+            x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
             x_user.join_request_status = "DISCARDED"
             x_user.save()
 
@@ -54,14 +54,20 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
             await c.message.delete_reply_markup()
             await c.message.edit_text(c.message.text + '\n\nОтклонена ⛔')
         if actions[0] == "accept_user":
-            x_user = TgUser.objects.get({"_id": int(actions[1])})
+            x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
+            if x_user.is_member:
+                await c.message.delete_reply_markup()
+                await c.answer("Этот пользователь был уже принят другим админом", show_alert=True)
+                await c.message.edit_text(c.message.text + f'\n\nОдобрена @{x_user.invited_by.username}💚')
+                
+            
             x_user.join_request_status = "ACCEPTED"
             x_user.is_member = True
             x_user.invited_by = user.id
             x_user.save()
 
             await bot.send_message(x_user.id, f"✅ Заявка на использование одобрена. Меню ниже")
-            await bot.send_message(x_user.id, f"💠 Главное меню 💠", reply_markup=Keyboards.start_menu(x_user))
+            await bot.send_message(x_user.id, BOT_TEXTS.MainMenuText, reply_markup=Keyboards.start_menu(x_user))
             
             await c.message.delete_reply_markup()
             await c.message.edit_text(c.message.text + '\n\nОдобрена 💚')

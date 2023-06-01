@@ -31,7 +31,7 @@ async def _(m: Message, state: FSMContext = None):
     currencies: List[Currency] = Currency.objects.raw({"is_available": True, "_id": {"$ne": target_currency.id}})
     
     await m.answer("Выберите тип валюты, за которую вы купили:",
-                        reply_markup=Keyboards.Admin.Currencies.choose_currency_to_buy_from(currencies))
+                        reply_markup=Keyboards.Admin.Currencies.choose_target_currency_buy_from(currencies))
     await AdminInputStates.BuyCurrencySourceType.set()
     
 
@@ -79,8 +79,7 @@ async def _(m: Message, state: FSMContext, user: TgUser = None):
                    f"Курс 1 {stateData['target_currency'].symbol} = {exchange_rate} {stateData['source_currency'].symbol}")
     
     
-    max_id_doc = get_max_id_doc(BuyingCurrency)
-    bc = BuyingCurrency(id=max_id_doc.id+1 if max_id_doc else 0,
+    bc = BuyingCurrency(id=get_max_id_doc(BuyingCurrency) + 1,
                     owner=user.id,
                    source_currency=stateData['source_currency'],
                    source_amount=stateData['source_amount'],
@@ -91,7 +90,7 @@ async def _(m: Message, state: FSMContext, user: TgUser = None):
                    )
     bc.save()
     
-    await send_currencies(m)
+    await send_currencies(m, user)
 
     # Update sheets
     SheetsSyncer.sync_currency_purchases(user)

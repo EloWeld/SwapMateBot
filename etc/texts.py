@@ -11,7 +11,7 @@ class BotTexts(BaseModel):
     MyUsers = "👥 Пользователи"
     Profile = "👩🏻‍💻 Профиль"
 
-    DealCalc = "📊 Калькулятор свапов"
+    DealCalc = "📊 ДАЮ-ПОЛУЧАЮ"
     DealsHistory = "🗄 История свапов"
     ActualRates = "⭐️ Актуальные курсы"
 
@@ -19,9 +19,11 @@ class BotTexts(BaseModel):
     Continue = "🏁 Продолжить"
     Previous = "⬅"
     Next = "➡"
+    RefillBalance = "📥 Пополнить баланс"
 
     InvalidValue = "❗ Некорректное значение"
 
+    Hide = "➖➖➖Скрыть➖➖➖"
     SendDeal = "✅ Отправить"
     Cancel = "❌ Отменить"
     AddInfo = "📝 Добавить доп. информацию"
@@ -31,6 +33,7 @@ class BotTexts(BaseModel):
     FoundCheaper = "📈 Нашёл дешевле!"
 
     SuggestRate = "💡 Предложить курс"
+    OpenUser = "👤 Открыть профиль пользователя"
 
     verbose_emoji = {
         "CANCELLED": "⛔",
@@ -45,6 +48,8 @@ class BotTexts(BaseModel):
         "ACTIVE": "Активная",
         "FINISHED": "Завершённая"
     }
+
+    MainMenuText = "💠 Главное меню 💠"
 
 
 # Создаем экземпляр класса

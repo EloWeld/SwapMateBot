@@ -1,8 +1,10 @@
+import datetime
 from typing import Union
 from pymodm import MongoModel, fields
 from pymongo.write_concern import WriteConcern
 
-from models.etc import City
+from models.etc import City, Currency
+
 
 class TgUser(MongoModel):
     id = fields.IntegerField(primary_key=True)
@@ -17,10 +19,32 @@ class TgUser(MongoModel):
     join_request_status = fields.CharField(blank=False, choices=("NO", "SENT", "DISCARDED", "ACCEPTED"), default="NO")
 
     balance = fields.FloatField(blank=False, default=0)
+    balances = fields.DictField(blank=True, default={"5": 0, "2": 0})
     city: City = fields.ReferenceField(City, blank=True)
+    
+    personal_data_storage = fields.DictField(blank=True, default={})
+    cash_flow = fields.ListField(fields.ReferenceField('CashFlow'))
+    
+    created_at: datetime.datetime = fields.DateTimeField()
 
 
     class Meta:
         write_concern = WriteConcern(j=True)
         connection_alias = 'pymodm-conn'
         collection_name = 'Users'
+        
+
+def get_owner():
+    from models.tg_user import TgUser
+    return TgUser.objects.get({"_id": 6069303965})        
+
+cc = Currency(1, ["Физик"], False, get_owner(), "THB", "THB", True, 2.32347, 100)
+cc.save()
+cc = Currency(2, ["Нал", "Tinkoff QR", "Tinkoff CashIn", "АльфаБанк CashIn"], False, get_owner(), "RUB", "RUB", True, 1.0, 100, blocked_target_types=["Tinkoff QR"], blocked_source_types=["Tinkoff CashIn", "АльфаБанк CashIn"])
+cc.save()
+cc = Currency(3, ["Юрик", "Alipay", "WeChat"], False, get_owner(), "CNY", "CNY", True, 11.36, 100)
+cc.save()
+cc = Currency(4, ["Юрик Китай", "Юрик Гк"], False, get_owner(), "USD", "USD", True, 80.69, 100)
+cc.save()
+cc = Currency(5, [], True, get_owner(), "USDT", "USDT", True, 80.89, 100)
+cc.save()

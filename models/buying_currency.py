@@ -37,7 +37,7 @@ class BuyingCurrency(MongoModel):
     def get_row_headers():
         return [
             "ID",
-            "Пользователь"
+            "Пользователь",
             "Из валюты",
             "В валюту",
             "Отдал",

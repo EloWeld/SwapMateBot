@@ -1,4 +1,6 @@
+import datetime
 from etc.keyboards import Keyboards
+from etc.texts import BOT_TEXTS
 from loader import bot, dp
 from aiogram.types import Message, CallbackQuery, BotCommand, BotCommandScopeAllPrivateChats
 from models.tg_user import TgUser
@@ -11,7 +13,7 @@ async def start_cmd(m:Message, state:FSMContext=None):
     try:
         user = TgUser.objects.get({'_id': m.from_user.id})
     except TgUser.DoesNotExist:
-        user = TgUser(m.from_user.id)
+        user = TgUser(m.from_user.id, created_at=datetime.datetime.now())
 
     # User exists already
     user.fullname = m.from_user.full_name
@@ -19,7 +21,7 @@ async def start_cmd(m:Message, state:FSMContext=None):
     user.save()
 
     if user.is_member:
-        await m.answer("💠 Главное меню 💠", reply_markup=Keyboards.start_menu(user))
+        await m.answer(BOT_TEXTS.MainMenuText, reply_markup=Keyboards.start_menu(user))
         await bot.set_my_commands([
             BotCommand("start", "Перезапуск бота")
         ], scope=BotCommandScopeAllPrivateChats())
@@ -32,7 +34,18 @@ async def start_cmd(m:Message, state:FSMContext=None):
             await m.answer("🚀 Добро пожаловать в бота! Для продолжения заполните заявку. Пока что вам доступен ограниченный функционал", reply_markup=Keyboards.Identify.start_identify())
     
 
-
+@dp.callback_query_handler(lambda c: c.data.startswith('|hide_admin'), state="*")
+async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
+    await c.answer()
+    if user.is_admin:
+        await c.message.delete()
+        
+        
+@dp.callback_query_handler(lambda c: c.data.startswith('|hide'), state="*")
+async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
+    await c.answer()
+    await c.message.delete()
+            
 @dp.callback_query_handler(lambda c: c.data.startswith('|main'), state="*")
 async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     if state:

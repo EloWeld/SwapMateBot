@@ -1,8 +1,9 @@
+import datetime
 import os
 from typing import List
 from etc.states import AdminInputStates
 from etc.texts import BOT_TEXTS
-from etc.utils import get_rates_text
+from etc.utils import get_max_id_doc, get_rates_text
 from loader import bot, dp
 from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram.dispatcher.filters import ContentTypeFilter
@@ -12,18 +13,20 @@ from models.etc import Currency
 from models.tg_user import TgUser
 from etc.keyboards import Keyboards
 from aiogram.dispatcher.filters import Text
+from models.cash_flow import CashFlow
 
 from services.sheets_api import GoogleSheetsService
 from services.sheets_syncer import SheetsSyncer
 
-async def send_currencies(message: Message, is_edit = False):
-    currencies: List[Currency] = Currency.objects.raw({"is_available": True})
+async def send_currencies(message: Message, user: TgUser, is_edit = False):
+    currencies: List[Currency] = Currency.objects.raw({"admin": user.id})
     c_text = ""
     for currency in currencies:
         c_text += f"{currency.symbol} | {currency.pool_balance} | {currency.rub_rate} ₽\n"
         
     func = message.edit_text if is_edit else message.answer
     await func("💎 Список ваших валют\n"+c_text, reply_markup=Keyboards.Admin.Currencies.all_pool_currencies(currencies))
+
 
 @dp.callback_query_handler(lambda c: c.data.startswith('|admin:'), state="*")
 async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
@@ -39,7 +42,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     if actions[0] == "setup_exchange_rates":
         currencies: List[Currency] = Currency.objects.raw({"is_available": True})
         await c.message.edit_text("💎 Выберите валюту чтобы установить её курс\n\nТекущие курсы:\n" + get_rates_text(), 
-                                  reply_markup=Keyboards.Admin.choose_currency_to_change_rate(currencies))
+                                  reply_markup=Keyboards.Admin.choose_target_currency_change_rate(currencies))
     
     if actions[0] == "set_new_exchange_rate":
         currency: Currency = Currency.objects.get({"_id": int(actions[1])})
@@ -48,13 +51,13 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         await c.message.edit_text(f"✏️ Установите новый курс валюты {currency.symbol}")
     
     if actions[0] == "my_currencies":
-        await send_currencies(c.message, True)
+        await send_currencies(c.message, user, True)
     
     if actions[0] == "my_deals":
         deals = Deal.objects.all()
         await c.message.edit_text("💎 Выберите тип свапов", reply_markup=Keyboards.Admin.dealsTypes(deals))
         
-    
+    # region rates
     if actions[0] == "accept_rate":
         deal: Deal = Deal.objects.get({"_id": int(actions[1])})
         rate = float(actions[2])
@@ -62,13 +65,13 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         deal.rate = rate
         deal.save()
 
-        text = f"✅ Предлжение изменения курса сделки <code>#{deal.id}</code> на <b>{rate}</b> одобрено"
+        text = f"✅ Предлжение изменения курса свапа <code>#{deal.id}</code> на <b>{rate}</b> одобрено"
         await c.message.edit_text(text)
         await bot.send_message(deal.owner.id, text)
 
     if actions[0] == "change_rate":
         deal: Deal = Deal.objects.get({"_id": int(actions[1])})
-        await c.message.answer(f"✏️ Введите новое значене курса для сделки <code>#{deal.id}</code> <b>{deal.dir_text()}</b>")
+        await c.message.answer(f"✏️ Введите новое значене курса для свапа <code>#{deal.id}</code> <b>{deal.dir_text()}</b>")
         await AdminInputStates.ChangeDealRate.set()
         await state.update_data(deal=deal)
         await c.answer()
@@ -77,10 +80,13 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         deal: Deal = Deal.objects.get({"_id": int(actions[1])})
         rate = float(actions[2])
 
-        text = f"⛔ Предлжение изменения курса сделки <code>#{deal.id}</code> на <b>{rate}</b> отклонено"
+        text = f"⛔ Предлжение изменения курса свапа <code>#{deal.id}</code> на <b>{rate}</b> отклонено"
         await c.message.edit_text(text)
         await bot.send_message(deal.owner.id, text)
         
+    # endregion
+        
+    # region deals
     if actions[0] == "deals_with_status":
         status = actions[1]
         verbose_status = BOT_TEXTS.verbose[status]
@@ -112,14 +118,43 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         deal.status = Deal.DealStatuses.FINISHED.value
         deal.save()
 
-        await c.answer("🏁 Сделка завершена!")
+        await c.answer("🏁 Свап завершён!")
         await c.message.edit_reply_markup(Keyboards.back(f"|admin:deals_with_status:{stateData.get('deals_status', deal.status)}"))
 
-        deal.currency_from.pool_balance += deal.deal_value
-        deal.currency_from.save()
+        await bot.send_message(deal.owner.id, f"🏁 Свап <code>#{deal.id}</code> завершён!")
 
-        deal.currency_to.pool_balance -= deal.deal_value * deal.rate
-        deal.currency_to.save()
+        deal.source_currency.pool_balance += deal.deal_value
+        deal.source_currency.save()
+
+        deal.target_currency.pool_balance -= deal.deal_value * deal.rate
+        deal.target_currency.save()
+        
+        # Cash Flow
+        cash_flow = CashFlow(
+            id=get_max_id_doc(CashFlow) + 1,
+            user=deal.owner,
+            type=CashFlow.CashFlowType.SWAP.name,
+            source_currency=deal.source_currency,
+            source_amount=deal.deal_value,
+            target_currency=deal.target_currency,
+            target_amount=deal.deal_value * deal.rate,
+            additional_data="По курсу:",
+            additional_amount=deal.rate,
+            created_at=datetime.datetime.now(),
+        ) 
+        cash_flow.save()
+        deal.owner.cash_flow.append(cash_flow)
+        deal.owner.save()
+        
+        # Change balance
+        # deal_owner: TgUser = TgUser.objects.get({"_id": deal.owner.id})
+        # if str(deal.target_currency.id) not in deal_owner.balances:
+        #     deal_owner.balances[str(deal.target_currency.id)] = 0
+        #     deal_owner.save()
+            
+        # deal_owner.balances[str(deal.target_currency.id)] += deal.deal_value * deal.rate
+        # deal_owner.save()
+        
 
         SheetsSyncer.sync_deals(user)
 
@@ -130,8 +165,10 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         deal.status = Deal.DealStatuses.CANCELLED.value
         deal.save()
 
-        await c.answer("⛔ Сделка отменена!")
+        await c.answer("⛔ Свап отменён!")
         await c.message.edit_reply_markup(Keyboards.back(f"|admin:deals_with_status:{stateData.get('deals_status', deal.status)}"))
+
+        await bot.send_message(deal.owner.id, f"⛔ Свап <code>#{deal.id}</code> отменён!")
         
     if actions[0] == "send_deal_receipt":
         
@@ -144,8 +181,48 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         await c.message.edit_text("🧾 Приложите чек для отправки", reply_markup=Keyboards.back('|main'))
         await AdminInputStates.SendReceipt.set()
         await state.update_data(deal=deal)
-        
+    
+    #endregion        
 
+    # region users
+    if actions[0] == "accept_refill" and user.is_admin:
+        await c.message.edit_reply_markup(None)
+        await c.message.edit_text(c.message.text + "\n\n💜 Одобрена")
+        x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
+        refill_amount = float(actions[2])
+        currency: Currency = Currency.objects.get({"symbol": actions[3], "admin": user.id})
+
+        if str(currency.id) not in x_user.balances:
+            x_user.balances[str(currency.id)] = 0
+        x_user.balances[str(currency.id)] += refill_amount
+        
+        x_user.save()
+        
+        # Cash Flow
+        cash_flow = CashFlow(
+            id=get_max_id_doc(CashFlow) + 1,
+            user=x_user,
+            type=CashFlow.CashFlowType.REFILL_BALANCE.name,
+            target_currency=currency,
+            target_amount=refill_amount,
+            created_at=datetime.datetime.now(),
+        ) 
+        cash_flow.save()
+        x_user.cash_flow.append(cash_flow)
+        x_user.save()
+        
+        await bot.send_message(x_user.id, f"💜 Ваша заявка на пополнение <code>{refill_amount} {currency.symbol}</code> одобрена!")
+
+    if actions[0] == "discard_refill" and user.is_admin:
+        await c.message.edit_reply_markup(None)
+        await c.message.edit_text(c.message.text + "\n\n🛑 Отклонена")
+        x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
+        refill_amount = float(actions[2])
+        currency: Currency = Currency.objects.get({"symbol": actions[3], "admin": user.id})
+
+        await bot.send_message(x_user.id, f"🛑 Ваша заявка на пополнение <code>{refill_amount} {currency.symbol}</code> отклонена!")
+
+    # endregion
 
 @dp.callback_query_handler(lambda c: c.data.startswith('|currency_pool'), state="*")
 async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
@@ -187,7 +264,7 @@ async def _(m: Message, state: FSMContext = None):
     await m.answer("✅ Готово")
     currencies: List[Currency] = Currency.objects.raw({"is_available": True})
     await m.answer("💎 Выберите валюту чтобы установить её курс\n\nТекущие курсы:\n" + get_rates_text(), 
-                                reply_markup=Keyboards.Admin.choose_currency_to_change_rate(currencies))
+                                reply_markup=Keyboards.Admin.choose_target_currency_change_rate(currencies))
     
     
 @dp.message_handler(content_types=[ContentType.TEXT], state=AdminInputStates.ChangeDealRate)
@@ -245,3 +322,10 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
         user.is_admin = not user.is_admin
         user.save()
         await m.answer(f"Статус админа: <code>{user.is_admin}</code>")
+        
+@dp.message_handler(Text("переключи2"), content_types=[ContentType.TEXT], state="*")
+async def _(m: Message, state: FSMContext = None, user: TgUser = None):
+    if user:
+        user.invited_by = user if user.invited_by == 6069303965 else TgUser.objects.get({"_id": 6069303965})
+        user.save()
+        await m.answer(f"Приглашён пользователем: <code>{user.invited_by.id}</code>")

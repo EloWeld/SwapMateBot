@@ -60,10 +60,10 @@ def get_max_id_doc(model: MongoModel, condition={}):
         # Сортируем в обратном порядке (так получим максимальный id) и выбираем первый элемент
         max_id_document = model.objects.raw(
             condition).order_by([('_id', DESCENDING)]).first()
-        max_id = max_id_document
+        max_id = max_id_document.id
     except model.DoesNotExist:
         # Если нет такого элемента, возвращаем None
-        max_id = None
+        max_id = 0
     return max_id
 
 

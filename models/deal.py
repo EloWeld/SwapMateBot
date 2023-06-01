@@ -3,6 +3,7 @@ from typing import List
 from pymodm import MongoModel, fields
 from pymongo.write_concern import WriteConcern
 from enum import Enum
+from etc.texts import BOT_TEXTS
 from models.etc import Currency
 
 from models.tg_user import TgUser
@@ -18,8 +19,8 @@ class Deal(MongoModel):
     admin: TgUser = fields.ReferenceField(TgUser)
     owner: TgUser = fields.ReferenceField(TgUser)
     deal_value = fields.FloatField()
-    currency_from: Currency = fields.ReferenceField(Currency)
-    currency_to: Currency = fields.ReferenceField(Currency)
+    source_currency: Currency = fields.ReferenceField(Currency)
+    target_currency: Currency = fields.ReferenceField(Currency)
     currency_type_from = fields.CharField(blank=True)
     currency_type_to = fields.CharField(blank=True)
     status = fields.CharField(choices=list(DealStatuses.__members__.keys()), default=DealStatuses.ACTIVE.value)
@@ -35,12 +36,15 @@ class Deal(MongoModel):
 
     def dir_text(self, with_values = False, tag="code", remove_currency_type=False):
         if with_values:
-            return f"<{tag}>{self.deal_value:.4f}</{tag}> {self.currency_from.symbol} ➡️ <{tag}>{self.rate*self.deal_value:.4f}</{tag}> {self.currency_to.symbol}"
+            return f"<{tag}>{self.deal_value:.4f}</{tag}> {self.source_currency.symbol} ➡️ <{tag}>{self.rate*self.deal_value:.4f}</{tag}> {self.target_currency.symbol}"
         else:
-            return f"{self.currency_from.symbol}{'' if not self.currency_type_from or remove_currency_type else f' {self.currency_type_from}'} ➡️ {self.currency_to.symbol}{'' if not self.currency_type_to or remove_currency_type else f' {self.currency_type_to}'}"
+            return f"{self.source_currency.symbol}{'' if not self.currency_type_from or remove_currency_type else f' {self.currency_type_from}'} ➡️ {self.target_currency.symbol}{'' if not self.currency_type_to or remove_currency_type else f' {self.currency_type_to}'}"
         
     def get_rate_text(self, tag="code"):
-        return f"<{tag}>{1}</{tag}> <{tag}>{self.currency_from.symbol}</{tag}> = <{tag}>{self.rate:.4f}</{tag}> <{tag}>{self.currency_to.symbol}</{tag}>"
+        if self.rate >= 1:
+            return f"<{tag}>{1}</{tag}> <{tag}>{self.source_currency.symbol}</{tag}> = <{tag}>{self.rate:.4f}</{tag}> <{tag}>{self.target_currency.symbol}</{tag}>"
+        else:
+            return f"<{tag}>{1}</{tag}> <{tag}>{self.target_currency.symbol}</{tag}> = <{tag}>{1/self.rate:.4f}</{tag}> <{tag}>{self.source_currency.symbol}</{tag}>"
     
     def get_full_external_id(self):
         date = self.created_at if self.created_at else self.datetime(
@@ -52,9 +56,9 @@ class Deal(MongoModel):
             self.id,
             self.get_full_external_id(),
             self.status,
-            self.currency_from.symbol,
+            self.source_currency.symbol,
             self.currency_type_from,
-            self.currency_to.symbol,
+            self.target_currency.symbol,
             self.currency_type_to,
             f"{self.owner.id} @{self.owner.username} @{self.owner.real_name}",
             self.deal_value,
@@ -78,32 +82,54 @@ class Deal(MongoModel):
             "Пользователь",
             "Отдал",
             "Получил",
+            "Курс свапа",
             "Профит",
             "Доп. информация",
             "Дата и время свапа",
         ]
     
+    def profit_with(self, purchase):
+        if self.source_currency == purchase.source_currency:
+            rate = purchase.exchange_rate
+        else:
+            rate = 1 / purchase.exchange_rate
+        return (rate - (self.deal_value * self.rate) / self.deal_value) * self.deal_value / rate
+    
     def calculate_profit(self, bc_list=[]):
         from models.buying_currency import BuyingCurrency
         from pymongo import DESCENDING, ASCENDING
         profit = 0
+        ddv = self.deal_value
         if bc_list:
             buying_currencies = bc_list
         else:
             buying_currencies: List[BuyingCurrency] = BuyingCurrency.objects.raw({"$or": [
-                {"$and": [{"source_currency": self.currency_from.id}, {"target_currency": self.currency_to.id},] },
-                {"$and": [{"target_currency": self.currency_from.id}, {"source_currency": self.currency_to.id}]}]}).order_by([('created_at', DESCENDING)])
-        for bc in buying_currencies:
-            exrate = bc.exchange_rate if bc.source_currency.id == self.currency_from.id else 1 / bc.exchange_rate
-            dv = min(bc.target_amount, self.deal_value)
-            profit += dv / exrate - dv / self.rate
-            self.deal_value -= bc.target_amount
-            if self.deal_value <= 0:
-                break
-        if self.deal_value >=0:
-            return 0
-        return profit
+                {"$and": [{"source_currency": self.source_currency.id}, {"target_currency": self.target_currency.id},] },
+                {"$and": [{"target_currency": self.source_currency.id}, {"source_currency": self.target_currency.id}]}]}).order_by([('created_at', DESCENDING)])
+            
+        remaining_amount = self.deal_value
+        idx = 0
+        profit_parts = []
+        while remaining_amount > 0 and idx < buying_currencies.count():
+            purchase = buying_currencies[idx]
+            if purchase.target_currency == self.source_currency or purchase.source_currency == self.source_currency:
+                if remaining_amount <= purchase.target_amount:
+                    profit_parts.append(self.profit_with(purchase) * remaining_amount / self.deal_value)
+                    purchase.target_amount -= remaining_amount
+                    remaining_amount = 0
+                else:
+                    profit_parts.append(self.profit_with(purchase) * purchase.target_amount / self.deal_value)
+                    remaining_amount -= purchase.target_amount
+                    purchase.target_amount = 0
+            idx += 1
+        return sum(profit_parts)
 
 
 
-        
+    def get_user_text(self):
+        return (f"💠 Свап <code>{self.id}</code>\n\n"
+                                  f"🚦 Статус: <code>{BOT_TEXTS.verbose[self.status]}</code>\n"
+                                  f"💱 Направление: <code>{self.dir_text()}</code>\n"
+                                  f"💱 Обмен: {self.dir_text(with_values=True, tag='b')}\n"
+                                  f"💱 Курс: <code>1 {self.source_currency.symbol} = {self.rate:.4f} {self.target_currency.symbol}</code>\n"
+                                  f"📅 Дата создания: <code>{str(self.created_at)[:-7]}</code>\n")

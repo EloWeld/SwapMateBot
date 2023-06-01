@@ -4,6 +4,7 @@ from typing import List, Union
 from etc.keyboards import Keyboards
 from etc.texts import BOT_TEXTS
 from etc.utils import get_rates_text
+from handlers.deal import get_calc_text
 from loader import dp
 from aiogram.types import CallbackQuery, Message
 from aiogram.dispatcher import FSMContext
@@ -31,8 +32,8 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         #await c.answer("🧠 В разработке", show_alert=True)
     if actions[0] == "deal_calc":
         
-        await c.message.edit_text("1️⃣ Выберите то, что отдаёте в левой колонке\n\n2️⃣ Выберите то, что получаете в правой колонке", 
-                                  reply_markup=Keyboards.Calc.main(stateData.get('sel_from', None), stateData.get('sel_to', None)))
+        await c.message.edit_text(get_calc_text(user), 
+                                  reply_markup=Keyboards.Calc.main(user, stateData.get('sel_from', None), stateData.get('sel_to', None)))
     if actions[0] == "see_deal":
         try:
             deal: Deal = Deal.objects.get({"_id": int(actions[1])})
@@ -40,13 +41,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
             await c.answer(f"❌ Свап #{actions[1]} не найден", show_alert=True)
             return
         
-        await c.message.edit_text(f"💠 Свап <code>{deal.id}</code>\n\n"
-                                  f"🚦 Статус: <code>{BOT_TEXTS.verbose[deal.status]}</code>\n"
-                                  f"💱 Направление: <code>{deal.dir_text()}</code>\n"
-                                  f"💱 Обмен: {deal.dir_text(with_values=True, tag='b')}\n"
-                                  f"💱 Курс: <code>1 {deal.currency_from.symbol} = {deal.rate:.4f} {deal.currency_to.symbol}</code>\n"
-                                  f"📅 Дата создания: <code>{str(deal.created_at)[:-7]}</code>\n", 
-                                  reply_markup=Keyboards.Deals.deal_info(user, deal))
+        await c.message.edit_text(deal.get_user_text(), reply_markup=Keyboards.Deals.deal_info(user, deal))
         
     if actions[0] == "found_cheaper":
         await c.answer("Мне реально вот не важно, дешевле ты нашёл или нет, цены есть цены. Нравится - не нравится, терпи, моя красавица.", show_alert=True)

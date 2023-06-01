@@ -79,6 +79,35 @@ class Keyboards:
 
                 return k
             
+            @staticmethod
+            def open_from_deal(deal: Deal, user: TgUser):
+                k = IKeyboard(row_width=2)
+                k.row()
+
+                k.insert(IButton("💰 Изменить баланс", callback_data=f"|admin_slave_users:change_balance:{user.id}"))
+
+                if user.is_member or user.is_admin:
+                    k.insert(IButton("⤵️ Понизить", callback_data=f"|admin_slave_users:downgrade:{user.id}"))
+                if not user.is_admin:
+                    k.insert(IButton("⤴️ Повысить", callback_data=f"|admin_slave_users:upgrade:{user.id}"))
+
+                k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:see_deal:{deal.id}"))
+
+                return k
+
+            
+        @staticmethod
+        def refill_user_balance(user: TgUser, refill_amount: float, symbol: str):
+            k = IKeyboard()
+          
+            k.row(IButton(f"💜 Одобрить",
+                  callback_data=f"|admin:accept_refill:{user.id}:{refill_amount}:{symbol}"))
+            k.row(IButton(f"🛑 Отклонить",
+                  callback_data=f"|admin:discard_refill:{user.id}:{refill_amount}:{symbol}"))
+
+            k.row(IButton(BOT_TEXTS.Hide, callback_data=f"|hide_admin"))
+
+            return k
         @staticmethod
         def dealsTypes(deals: List[Deal]):
             a_delas_count = len([x for x in deals if x.status == "ACTIVE"])
@@ -99,7 +128,7 @@ class Keyboards:
         @staticmethod
         def jump_to_deal(deal: Deal):
             k = IKeyboard()
-            k.row(IButton(f"Перейти к сделке 👀", callback_data=f"|admin:see_deal:{deal.id}"))
+            k.row(IButton(f"Перейти к свапу 👀", callback_data=f"|admin:see_deal:{deal.id}"))
             return k
         
         @staticmethod
@@ -114,7 +143,7 @@ class Keyboards:
         def deals(deals: List[Deal]):
             k = IKeyboard()
             for deal in deals:
-                k.row(IButton(f"{deal.get_full_external_id()} | {deal.currency_from.symbol} > {deal.currency_to.symbol}",
+                k.row(IButton(f"{deal.get_full_external_id()} | {deal.source_currency.symbol} > {deal.target_currency.symbol}",
                       callback_data=f"|admin:see_deal:{deal.id}"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
             return k
@@ -130,13 +159,15 @@ class Keyboards:
                         callback_data=f"|admin:finish_deal:{deal.id}"))
                 k.insert(IButton(BOT_TEXTS.Cancel,
                         callback_data=f"|admin:cancel_deal:{deal.id}"))
+            k.row(IButton(BOT_TEXTS.OpenUser,
+                    callback_data=f"|admin_slave_users:user_from_deal:{deal.id}"))
             k.row(IButton(BOT_TEXTS.BackButton,
                   callback_data=f"|admin:deals_with_status:{deal.status}"))
             return k
             return k
 
         @staticmethod
-        def choose_currency_to_change_rate(currencies: List[Currency]):
+        def choose_target_currency_change_rate(currencies: List[Currency]):
             k = IKeyboard()
             for currency in currencies:
                 k.row(IButton(
@@ -164,7 +195,7 @@ class Keyboards:
                 return k
 
             @staticmethod
-            def choose_currency_to_buy_from(currencies: List[Currency]):
+            def choose_target_currency_buy_from(currencies: List[Currency]):
                 k = IKeyboard()
                 for currency in currencies:
                     k.row(IButton(
@@ -173,14 +204,12 @@ class Keyboards:
                       callback_data=f"|admin:my_currencies"))
                 return k
 
-    # Calc class
-
     class Calc:
         @staticmethod
-        def main(selected_from=None, selected_to=None, selected_from_type=None, selected_to_type=None,):
+        def main(user: TgUser, selected_from: Currency=None, selected_to: Currency=None, selected_from_type=None, selected_to_type=None):
             k = IKeyboard()
             currencies: List[Currency] = Currency.objects.raw(
-                {"is_available": True})
+                {"is_available": True, "admin": user.invited_by.id})
             for currency in currencies:
                 if currency.types == []:
                     k.row()
@@ -196,9 +225,15 @@ class Keyboards:
                         f = selected_from.symbol + \
                             selected_from_type if selected_from and selected_from_type else None
                         t = selected_to.symbol+selected_to_type if selected_to and selected_to_type else None
-                        k.insert(IButton(f"{currency.symbol} ({ctype})" if f != currency.symbol +
+                        if ctype in currency.blocked_source_types:
+                            k.insert(IButton('➖', callback_data="|deal_calc:forbidden_choice"))
+                        else:
+                            k.insert(IButton(f"{currency.symbol} ({ctype})" if f != currency.symbol +
                                  ctype else f"✅ {currency.symbol} ({ctype})", callback_data=f"|deal_calc:sel_from:{currency.symbol}:{ctype}"))
-                        k.insert(IButton(f"{currency.symbol} ({ctype})" if t != currency.symbol +
+                        if ctype in currency.blocked_target_types:
+                            k.insert(IButton('➖', callback_data="|deal_calc:forbidden_choice"))
+                        else:
+                            k.insert(IButton(f"{currency.symbol} ({ctype})" if t != currency.symbol +
                                  ctype else f"✅ {currency.symbol} ({ctype})", callback_data=f"|deal_calc:sel_to:{currency.symbol}:{ctype}"))
 
             if selected_from and selected_to and selected_from != selected_to:
@@ -228,7 +263,7 @@ class Keyboards:
         def user_deals_history(deals: List[Deal]):
             k = IKeyboard()
             for deal in deals:
-                k.row(IButton(f"{deal.get_full_external_id()} | {BOT_TEXTS.verbose_emoji[deal.status]} | {deal.currency_from.symbol} > {deal.currency_to.symbol}",
+                k.row(IButton(f"{deal.get_full_external_id()} | {BOT_TEXTS.verbose_emoji[deal.status]} | {deal.source_currency.symbol} > {deal.target_currency.symbol}",
                               callback_data=f"|convertor:see_deal:{deal.id}"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data="|main"))
             return k
@@ -246,6 +281,16 @@ class Keyboards:
         def suggest_rate(deal: Deal):
             k = IKeyboard()
             k.row(IButton(BOT_TEXTS.Cancel, callback_data=f"|deal_calc:suggest_rate_cancel"))
+            return k
+
+    class Profile:
+            
+        @staticmethod
+        def main(user: TgUser):
+            k = IKeyboard()
+            k.row(IButton(BOT_TEXTS.RefillBalance, callback_data="|profile:refill_balance"))
+            k.row(IButton(BOT_TEXTS.Profile, callback_data="|main"))
+
             return k
 
     @staticmethod
