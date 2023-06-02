@@ -23,7 +23,7 @@ MAX_INLINE_COUNT = 10
 # Initialize MongoDB
 
 MDB = MongoClient(MONGODB_CONNECTION_URI).get_database(MONGO_DB_NAME)
-connect(MONGODB_CONNECTION_URI+f'/{MONGO_DB_NAME}', alias="pymodm-conn")
+connect(MONGODB_CONNECTION_URI+f'/{MONGO_DB_NAME}?authSource=admin', alias="pymodm-conn")
 
 # Constants class
 class ConstantsMetaClass(type):
