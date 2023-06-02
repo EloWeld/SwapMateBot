@@ -19,10 +19,10 @@ from services.sheets_api import GoogleSheetsService
 from services.sheets_syncer import SheetsSyncer
 
 async def send_currencies(message: Message, user: TgUser, is_edit = False):
-    currencies: List[Currency] = Currency.objects.raw({"admin": user.id})
+    currencies: List[Currency] = Currency.objects.all()
     c_text = ""
     for currency in currencies:
-        c_text += f"{currency.symbol} | {currency.pool_balance} | {currency.rub_rate} ₽\n"
+        c_text += f"<code>{currency.symbol}</code> — <code>{currency.pool_balance:.2f}</code>, курс {currency.rub_rate:.2f} ₽\n"
         
     func = message.edit_text if is_edit else message.answer
     await func("💎 Список ваших валют\n"+c_text, reply_markup=Keyboards.Admin.Currencies.all_pool_currencies(currencies))
@@ -67,7 +67,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
 
         text = f"✅ Предлжение изменения курса свапа <code>#{deal.id}</code> на <b>{rate}</b> одобрено"
         await c.message.edit_text(text)
-        await bot.send_message(deal.owner.id, text)
+        await bot.send_message(deal.owner.id, text, reply_markup=Keyboards.Deals.jump_to_deal(deal))
 
     if actions[0] == "change_rate":
         deal: Deal = Deal.objects.get({"_id": int(actions[1])})
@@ -82,7 +82,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
 
         text = f"⛔ Предлжение изменения курса свапа <code>#{deal.id}</code> на <b>{rate}</b> отклонено"
         await c.message.edit_text(text)
-        await bot.send_message(deal.owner.id, text)
+        await bot.send_message(deal.owner.id, text, reply_markup=Keyboards.Deals.jump_to_deal(deal))
         
     # endregion
         
@@ -123,13 +123,16 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
 
         await bot.send_message(deal.owner.id, f"🏁 Свап <code>#{deal.id}</code> завершён!")
 
-        deal.source_currency.pool_balance += deal.deal_value
-        deal.source_currency.save()
-
-        deal.target_currency.pool_balance -= deal.deal_value * deal.rate
-        deal.target_currency.save()
+        cc: Currency = Currency.objects.get({"_id": deal.source_currency.id})
+        cc.pool_balance += deal.deal_value
+        cc.save()
+        
+        tc: Currency = Currency.objects.get({"_id": deal.target_currency.id})
+        tc.pool_balance -= deal.deal_value * deal.rate
+        tc.save()
         
         # Cash Flow
+        deal_owner: TgUser = TgUser.objects.get({"_id": deal.owner.id})
         cash_flow = CashFlow(
             id=get_max_id_doc(CashFlow) + 1,
             user=deal.owner,
@@ -143,8 +146,8 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
             created_at=datetime.datetime.now(),
         ) 
         cash_flow.save()
-        deal.owner.cash_flow.append(cash_flow)
-        deal.owner.save()
+        deal_owner.cash_flow.append(cash_flow)
+        deal_owner.save()
         
         # Change balance
         # deal_owner: TgUser = TgUser.objects.get({"_id": deal.owner.id})
@@ -156,7 +159,8 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         # deal_owner.save()
         
 
-        SheetsSyncer.sync_deals(user)
+        SheetsSyncer.sync_deals()
+        SheetsSyncer.sync_users_cash_flow(deal_owner.id)
 
 
     if actions[0] == "cancel_deal":
@@ -164,6 +168,10 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
 
         deal.status = Deal.DealStatuses.CANCELLED.value
         deal.save()
+        
+        deal_owner = TgUser.objects.get({"_id": deal.owner.id})
+        deal_owner.balances[str(deal.source_currency.id)] += deal.deal_value
+        deal_owner.save()
 
         await c.answer("⛔ Свап отменён!")
         await c.message.edit_reply_markup(Keyboards.back(f"|admin:deals_with_status:{stateData.get('deals_status', deal.status)}"))
@@ -190,7 +198,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         await c.message.edit_text(c.message.text + "\n\n💜 Одобрена")
         x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
         refill_amount = float(actions[2])
-        currency: Currency = Currency.objects.get({"symbol": actions[3], "admin": user.id})
+        currency: Currency = Currency.objects.get({"symbol": actions[3]})
 
         if str(currency.id) not in x_user.balances:
             x_user.balances[str(currency.id)] = 0
@@ -204,7 +212,9 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
             user=x_user,
             type=CashFlow.CashFlowType.REFILL_BALANCE.name,
             target_currency=currency,
-            target_amount=refill_amount,
+            target_amount=x_user.balances[str(currency.id)],
+            additional_data="Пополнил на:",
+            additional_amount=refill_amount,
             created_at=datetime.datetime.now(),
         ) 
         cash_flow.save()
@@ -218,7 +228,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         await c.message.edit_text(c.message.text + "\n\n🛑 Отклонена")
         x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
         refill_amount = float(actions[2])
-        currency: Currency = Currency.objects.get({"symbol": actions[3], "admin": user.id})
+        currency: Currency = Currency.objects.get({"symbol": actions[3]})
 
         await bot.send_message(x_user.id, f"🛑 Ваша заявка на пополнение <code>{refill_amount} {currency.symbol}</code> отклонена!")
 
@@ -282,8 +292,8 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
     deal.rate = rate
     deal.save()
 
-    await m.answer(f"💱 Курс сделки <code>#{deal.id}</code> изменён на {deal.get_rate_text()}")
-    await bot.send_message(deal.owner.id, f"💱 Курс сделки <code>#{deal.id}</code> изменён на {deal.get_rate_text()}")
+    await m.answer(f"💱 Курс свапа <code>#{deal.id}</code> изменён на {deal.get_rate_text()}")
+    await bot.send_message(deal.owner.id, f"💱 Курс свапа <code>#{deal.id}</code> изменён на {deal.get_rate_text()}", reply_markup=Keyboards.Deals.jump_to_deal(deal))
     await state.finish()
 
 

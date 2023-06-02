@@ -36,15 +36,15 @@ class Deal(MongoModel):
 
     def dir_text(self, with_values = False, tag="code", remove_currency_type=False):
         if with_values:
-            return f"<{tag}>{self.deal_value:.4f}</{tag}> {self.source_currency.symbol} ➡️ <{tag}>{self.rate*self.deal_value:.4f}</{tag}> {self.target_currency.symbol}"
+            return f"<{tag}>{self.deal_value:.2f}</{tag}> {self.source_currency.symbol} ➡️ <{tag}>{self.rate*self.deal_value:.2f}</{tag}> {self.target_currency.symbol}"
         else:
             return f"{self.source_currency.symbol}{'' if not self.currency_type_from or remove_currency_type else f' {self.currency_type_from}'} ➡️ {self.target_currency.symbol}{'' if not self.currency_type_to or remove_currency_type else f' {self.currency_type_to}'}"
         
     def get_rate_text(self, tag="code"):
         if self.rate >= 1:
-            return f"<{tag}>{1}</{tag}> <{tag}>{self.source_currency.symbol}</{tag}> = <{tag}>{self.rate:.4f}</{tag}> <{tag}>{self.target_currency.symbol}</{tag}>"
+            return f"<{tag}>{1}</{tag}> <{tag}>{self.source_currency.symbol}</{tag}> = <{tag}>{self.rate:.2f}</{tag}> <{tag}>{self.target_currency.symbol}</{tag}>"
         else:
-            return f"<{tag}>{1}</{tag}> <{tag}>{self.target_currency.symbol}</{tag}> = <{tag}>{1/self.rate:.4f}</{tag}> <{tag}>{self.source_currency.symbol}</{tag}>"
+            return f"<{tag}>{1}</{tag}> <{tag}>{self.target_currency.symbol}</{tag}> = <{tag}>{1/self.rate:.2f}</{tag}> <{tag}>{self.source_currency.symbol}</{tag}>"
     
     def get_full_external_id(self):
         date = self.created_at if self.created_at else self.datetime(
@@ -125,11 +125,10 @@ class Deal(MongoModel):
         return sum(profit_parts)
 
 
-
     def get_user_text(self):
         return (f"💠 Свап <code>{self.id}</code>\n\n"
                                   f"🚦 Статус: <code>{BOT_TEXTS.verbose[self.status]}</code>\n"
                                   f"💱 Направление: <code>{self.dir_text()}</code>\n"
                                   f"💱 Обмен: {self.dir_text(with_values=True, tag='b')}\n"
-                                  f"💱 Курс: <code>1 {self.source_currency.symbol} = {self.rate:.4f} {self.target_currency.symbol}</code>\n"
+                                  f"💱 Курс: {self.get_rate_text()}\n"
                                   f"📅 Дата создания: <code>{str(self.created_at)[:-7]}</code>\n")

@@ -4,7 +4,7 @@ from typing import Union
 from etc.keyboards import Keyboards
 from etc.states import UserStates
 from etc.texts import BOT_TEXTS
-from loader import dp
+from loader import Consts, dp
 from aiogram.types import CallbackQuery, Message
 from aiogram.dispatcher import FSMContext
 from models.deal import Deal
@@ -18,7 +18,7 @@ def get_profile_text(user: TgUser):
     
     balances_text = "<code>Нет</code>"
     if user.balances != {}:
-        balances_text = "\n" + "\n".join([f"{Currency.objects.get({'_id': int(currency_id)}).symbol}: <code>{balance:.2f}</code>" for currency_id, balance in user.balances.items()])
+        balances_text = "\n" + "\n".join([f"▫️ {Currency.objects.get({'_id': int(currency_id)}).symbol}: <code>{balance:.2f}</code>" for currency_id, balance in user.balances.items()])
     
     main_text = f"💠 Ваш профиль 💠\n\n" \
         f"🙂 Имя: <code>{user.real_name}</code>\n" \
@@ -62,7 +62,7 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
     await state.finish()
     await m.answer("💸📥 Заявка отправлена!")
     try:
-        await bot.send_message(user.invited_by.personal_data_storage["RefillsChatID"], f"💸📥 Новая заявка на пополнение!"
+        await bot.send_message(Consts.RefillsChatID, f"💸📥 Новая заявка на пополнение!"
                            f"\n\nПользователь <a href='tg://user?id={user.id}'>{user.real_name}</a> подал заявку на пополнение\n\n"
                            f"Валюта: <code>{currency_symbol}</code>\n"
                            f"Количество: <code>{refill_amount}</code>\n", reply_markup=Keyboards.Admin.refill_user_balance(user, refill_amount, currency_symbol))

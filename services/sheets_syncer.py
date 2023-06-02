@@ -1,4 +1,6 @@
 from typing import List
+
+import loguru
 from models.buying_currency import BuyingCurrency
 from models.cash_flow import CashFlow
 from models.deal import Deal
@@ -6,92 +8,98 @@ from models.etc import Currency
 from models.tg_user import TgUser
 from services.sheets_api import GoogleSheetsService
 import pymongo
-
+from gspread.worksheet import Worksheet
 
 class SheetsSyncer:
 
     @staticmethod
-    def sync_users_cash_flow(owner_user: TgUser):
+    def sync_users_cash_flow(user_id=None):
+        sheet_index = 3
         
-        spsheet = GoogleSheetsService.spreadsheet()
-        sheet_index = TgUser.objects.raw({"is_admin": True}).count() * 3 
+        spreadsheet = GoogleSheetsService.spreadsheet()
+        sheets = GoogleSheetsService.worksheets(spreadsheet)
         
         
         members: List[TgUser] = TgUser.objects.raw({"is_member": True})
         for member in members:
-            GoogleSheetsService.clear_sheet(sheet_index, spsheet)
+            if user_id is not None and member.id != user_id:
+                sheet_index += 1
+                continue
+            sheets, sheet = GoogleSheetsService.achieve_sheet(spreadsheet, sheets, sheet_index)
+            sheet.clear()
             
             rows = [CashFlow.get_row_headers()]
             for cf in member.cash_flow:
-                rows.append(cf.as_row())
-            
-            GoogleSheetsService.row_style("bold|highlight", sheet_index, spsheet)
-            GoogleSheetsService.add_data_to_sheet(rows, sheet_index, spsheet)
-            GoogleSheetsService.update_sheet_title(
-            sheet_index, "П " + member.real_name, spsheet)
+                if cf:
+                    rows.append(cf.as_row())
+            rows.append(["Текущие балансы:"])
+            for balance_str_currency_key, balance_value in member.balances.items():
+                rows.append([Currency.objects.get({"_id": int(balance_str_currency_key)}).symbol, balance_value])
+                
+            GoogleSheetsService.row_style(sheet, "bold|highlight")
+            sheet.append_rows(rows)
+            GoogleSheetsService.update_titile(sheet, "П " + member.real_name)
             sheet_index += 1
             
         
     @staticmethod
-    def sync_currencies(owner_user: TgUser):
-        currencies: List[Currency] = Currency.objects.raw({"admin": owner_user.id})
-        owner_order = list(TgUser.objects.raw({"is_admin": True}).order_by(
-            [('created_at', pymongo.ASCENDING)])).index(owner_user)
+    def sync_currencies():
+        currencies: List[Currency] = Currency.objects.all()
 
-        spsheet = GoogleSheetsService.spreadsheet()
+        spreadsheet = GoogleSheetsService.spreadsheet()
+        sheets = GoogleSheetsService.worksheets(spreadsheet)
+        
+        sheet_index = 0
 
-        sheet_index = 0 + owner_order * 3
-
-        GoogleSheetsService.clear_sheet(sheet_index, spsheet)
+        sheets, sheet = GoogleSheetsService.achieve_sheet(spreadsheet, sheets, sheet_index)
+        
+        sheet.clear()
 
         rows = [Currency.get_row_headers()]
         for currency in currencies:
             rows.append(currency.as_row())
 
-        GoogleSheetsService.row_style("bold|highlight", sheet_index, spsheet)
-        GoogleSheetsService.add_data_to_sheet(rows, sheet_index, spsheet)
-        GoogleSheetsService.update_sheet_title(
-            sheet_index, owner_user.real_name + " (Валюты)", spsheet)
+        GoogleSheetsService.row_style(sheet, "bold|highlight")
+        sheet.append_rows(rows)
+        GoogleSheetsService.update_titile(sheet, "Валюты")
 
     @staticmethod
-    def sync_currency_purchases(owner_user: TgUser):
-        purchases: List[BuyingCurrency] = BuyingCurrency.objects.raw(
-            {"owner": owner_user.id})
-        owner_order = list(TgUser.objects.raw({"is_admin": True}).order_by(
-            [('created_at', pymongo.ASCENDING)])).index(owner_user)
+    def sync_currency_purchases():
+        purchases: List[BuyingCurrency] = BuyingCurrency.objects.all()
 
-        spsheet = GoogleSheetsService.spreadsheet()
+        spreadsheet = GoogleSheetsService.spreadsheet()
+        sheets = GoogleSheetsService.worksheets(spreadsheet)
 
-        sheet_index = 1 + owner_order * 3
+        sheet_index = 1
 
-        GoogleSheetsService.clear_sheet(sheet_index, spsheet)
+        sheets, sheet = GoogleSheetsService.achieve_sheet(spreadsheet, sheets, sheet_index)
+        sheet.clear()
 
-        rows = [Deal.get_row_headers()]
+        rows = [BuyingCurrency.get_row_headers()]
         for purchase in purchases:
             rows.append(purchase.as_row())
 
-        GoogleSheetsService.row_style("bold|highlight", sheet_index, spsheet)
-        GoogleSheetsService.add_data_to_sheet(rows, sheet_index, spsheet)
-        GoogleSheetsService.update_sheet_title(
-            sheet_index, owner_user.real_name + " (Покупки)", spsheet)
+        GoogleSheetsService.row_style(sheet, "bold|highlight")
+        sheet.append_rows(rows)
+        GoogleSheetsService.update_titile(sheet, "Покупки")
 
     @staticmethod
-    def sync_deals(owner_user: TgUser):
-        deals: List[Deal] = Deal.objects.raw({"admin": owner_user.id})
-        owner_order = list(TgUser.objects.raw({"is_admin": True}).order_by(
-            [('created_at', pymongo.ASCENDING)])).index(owner_user)
+    def sync_deals():
+        deals: List[Deal] = Deal.objects.all()
 
-        spsheet = GoogleSheetsService.spreadsheet()
+        spreadsheet = GoogleSheetsService.spreadsheet()
+        sheets = GoogleSheetsService.worksheets(spreadsheet)
 
-        sheet_index = 2 + owner_order * 3
+        sheet_index = 2
 
-        GoogleSheetsService.clear_sheet(sheet_index, spsheet)
+        
+        sheets, sheet = GoogleSheetsService.achieve_sheet(spreadsheet, sheets, sheet_index)
+        sheet.clear()
 
         rows = [Deal.get_row_headers()]
         for deal in deals:
             rows.append(deal.as_row())
 
-        GoogleSheetsService.row_style("bold|highlight", sheet_index, spsheet)
-        GoogleSheetsService.add_data_to_sheet(rows, sheet_index, spsheet)
-        GoogleSheetsService.update_sheet_title(
-            sheet_index, owner_user.real_name + " (Свапы)", spsheet)
+        GoogleSheetsService.row_style(sheet, "bold|highlight")
+        sheet.append_rows(rows)
+        GoogleSheetsService.update_titile(sheet, "Свапы")

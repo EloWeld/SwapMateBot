@@ -8,16 +8,17 @@ from services.sheets_syncer import SheetsSyncer
 def scheduled_sync():
     # Выполнять функцию каждые 5 минут
     for owner in TgUser.objects.raw({"is_admin": True}):
-        SheetsSyncer.sync_currency_purchases(owner)
-        SheetsSyncer.sync_deals(owner)
-        SheetsSyncer.sync_currencies(owner)
-        SheetsSyncer.sync_users_cash_flow(owner)
+        SheetsSyncer.sync_currency_purchases()
+        SheetsSyncer.sync_deals()
+        SheetsSyncer.sync_currencies()
+        SheetsSyncer.sync_users_cash_flow()
         loguru.logger.info("Synced")
+        break
 
 
 def main():
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(scheduled_sync, "interval", minutes=10)  # Планирование выполнения функции каждые 5 минут
+    scheduler.add_job(scheduled_sync, "interval", minutes=5)  # Планирование выполнения функции каждые 5 минут
     scheduled_sync()
     scheduler.start()
 

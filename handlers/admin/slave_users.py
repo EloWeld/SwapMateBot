@@ -17,12 +17,16 @@ from aiogram.dispatcher.filters import Text
 
 async def send_slave_user(receiver_user: TgUser, user: TgUser, edit_message: Union[Message, None] = None, reply_markup=None):
     swap_count = Deal.objects.raw({"owner": user.id}).count()
+    balances_text = "<code>Нет</code>"
+    if user.balances != {}:
+        balances_text = "\n" + "\n".join([f"▫️ {Currency.objects.get({'_id': int(currency_id)}).symbol}: <code>{balance:.2f}</code>" for currency_id, balance in user.balances.items()])
+    
     main_text = f"💠 Профиль {user.id} @{user.username} {user.fullname} 💠\n\n" \
         f"🙂 Имя: <code>{user.real_name}</code>\n" \
         f"🏘️ Город <code>{user.city.name}</code>\n" \
         f"\n" \
         f"💱 Всего свапов: <code>{swap_count}</code>\n" \
-        f"💰 Баланс: <code>{user.balance} ₽</code>\n" \
+        f"💰 Балансы: {balances_text}\n" \
         f"\n" \
         f"\n" \
         f"🔸 Админ: <code>{BOT_TEXTS.verbose[user.is_admin]}</code>\n" \
@@ -94,12 +98,12 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
     # Get currency
     stateData = await state.get_data()
     x_user: TgUser = stateData['x_user']
-    currency: Currency = Currency.objects.get({"symbol": m.text.split()[0], "admin": user.invited_by.id})
+    currency: Currency = Currency.objects.get({"symbol": m.text.split()[0]})
     
     try:
         old_balance = x_user.balances[str(currency.id)]
-        dep_amount = float(m.text.split()[1].replace(',','.'))
-        x_user.balances[str(currency.id)] = dep_amount
+        new_balance = float(m.text.split()[1].replace(',','.'))
+        x_user.balances[str(currency.id)] = new_balance
     except Exception as e:
         await m.answer(BOT_TEXTS.InvalidValue)
         return
@@ -115,9 +119,9 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
         source_currency=currency,
         source_amount=old_balance,
         target_currency=currency,
-        target_amount=x_user.balances[str(currency.id)],
-        additional_data="Пополнил на:",
-        additional_amount=dep_amount,
+        target_amount=new_balance,
+        additional_data="Изменил на:",
+        additional_amount=new_balance,
         created_at=datetime.datetime.now()
     ) 
     cash_flow.save()

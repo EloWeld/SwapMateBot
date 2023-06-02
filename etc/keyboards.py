@@ -134,7 +134,7 @@ class Keyboards:
         @staticmethod
         def suggested_rate(deal: Deal, rate: float):
             k = IKeyboard()
-            k.row(IButton(f"✅ Одобрить изменение курса {rate}", callback_data=f"|admin:accept_rate:{deal.id}:{rate}"))
+            k.row(IButton(f"✅ Одобрить изменение курса {rate if rate >= 1 else 1/  rate:.4f}", callback_data=f"|admin:accept_rate:{deal.id}:{rate}"))
             k.row(IButton("✏️ Изменить на своё усмотрение", callback_data=f"|admin:change_rate:{deal.id}"))
             k.row(IButton("❌ Отклонить предложение", callback_data=f"|admin:decline_rate:{deal.id}:{rate}"))
             return k
@@ -209,7 +209,7 @@ class Keyboards:
         def main(user: TgUser, selected_from: Currency=None, selected_to: Currency=None, selected_from_type=None, selected_to_type=None):
             k = IKeyboard()
             currencies: List[Currency] = Currency.objects.raw(
-                {"is_available": True, "admin": user.invited_by.id})
+                {"is_available": True})
             for currency in currencies:
                 if currency.types == []:
                     k.row()
@@ -239,7 +239,7 @@ class Keyboards:
             if selected_from and selected_to and selected_from != selected_to:
                 k.row(IButton(BOT_TEXTS.Continue,
                       callback_data=f"|deal_calc:start_deal"))
-            if selected_from and selected_to and selected_from_type and selected_to_type and selected_from == selected_to:
+            if selected_from and selected_to and selected_from_type and selected_to_type and selected_from.id == selected_to.id:
                 k.row(IButton("⛔", callback_data=f"|deal_calc:can_start_that_deal"))
 
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|main"))
@@ -259,6 +259,13 @@ class Keyboards:
             return k
 
     class Deals:
+        @staticmethod
+        def jump_to_deal(deal: Deal):
+            k = IKeyboard()
+            k.row(IButton("Открыть свап 👀", callback_data=f"|convertor:see_deal:{deal.id}"))
+            return k
+            
+        
         @staticmethod
         def user_deals_history(deals: List[Deal]):
             k = IKeyboard()
@@ -289,7 +296,7 @@ class Keyboards:
         def main(user: TgUser):
             k = IKeyboard()
             k.row(IButton(BOT_TEXTS.RefillBalance, callback_data="|profile:refill_balance"))
-            k.row(IButton(BOT_TEXTS.Profile, callback_data="|main"))
+            k.row(IButton(BOT_TEXTS.BackButton, callback_data="|main"))
 
             return k
 

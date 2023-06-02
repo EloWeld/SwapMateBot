@@ -14,6 +14,7 @@ class IdentifyState(StatesGroup):
 
 class UserStates(StatesGroup):
     SuggestRate = State()
+    FindCheaper = State()
     RefillBalance = State()
     DealAdditionalInfo = State()
 

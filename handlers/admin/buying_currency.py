@@ -93,5 +93,6 @@ async def _(m: Message, state: FSMContext, user: TgUser = None):
     await send_currencies(m, user)
 
     # Update sheets
-    SheetsSyncer.sync_currency_purchases(user)
+    SheetsSyncer.sync_currency_purchases()
+    SheetsSyncer.sync_currencies()
     

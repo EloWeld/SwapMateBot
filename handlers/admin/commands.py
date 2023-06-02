@@ -75,9 +75,9 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
     try:
         
         # Обновляем валюту в бд
-        target_currency: Currency = Currency.objects.get({"symbol": m.text.split()[1], "admin":user})
+        target_currency: Currency = Currency.objects.get({"symbol": m.text.split()[1]})
         target_amount: float = float(m.text.split()[2])
-        source_currency: Currency = Currency.objects.get({"symbol": m.text.split()[3], "admin":user})
+        source_currency: Currency = Currency.objects.get({"symbol": m.text.split()[3]})
         source_amount: float = float(m.text.split()[4])
         
         # Вычисляем курс свапа
@@ -103,7 +103,7 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
         target_currency.save()
         
         # Update sheets
-        SheetsSyncer.sync_currency_purchases(user)
+        SheetsSyncer.sync_currency_purchases()
         
     except Exception as e:
         await m.answer(BOT_TEXTS.InvalidValue)
@@ -149,7 +149,7 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
 async def _(m: Message, state: FSMContext = None, user: TgUser = None):    
     if user and user.is_admin:
         symbol = m.text.split()[1]
-        curr: Currency = Currency.objects.get({"symbol": symbol, "admin": user.id})
+        curr: Currency = Currency.objects.get({"symbol": symbol})
         curr.delete()
         
         await m.answer(f"✅ Валюта <code>{symbol}</code> удалена!")

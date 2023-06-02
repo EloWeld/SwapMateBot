@@ -12,15 +12,15 @@ from pymodm import MongoModel
 
 
 def rate_to_str(c1, c2, rate, postfix=""):
-    return f"1 {c2}{postfix} = {rate} {c1}"
+    return f"1 {c2}{postfix} = {rate:.2f} {c1}"
 
 
-async def notifyAdmins(text: str):
+async def notifyAdmins(text: str, reply_markup=None):
     admins: List[TgUser] = TgUser.objects.raw({"is_admin": True})
 
     for admin in admins:
         try:
-            await bot.send_message(admin.id, text)
+            await bot.send_message(admin.id, text, reply_markup=reply_markup)
         except Exception as e:
             loguru.logger.error(f"Can't send message to admin: {e}")
 
@@ -42,15 +42,14 @@ def get_rates_text():
     currencies: List[Currency] = Currency.objects.raw({"is_available": True})
     rates_text = ""
     for currency in currencies:
-        rates_text += rate_to_str('RUB', currency.symbol, currency.rub_rate,
-                                  ' (crypto)' if currency.is_crypto else '') + "\n"
+        rates_text += rate_to_str('RUB', currency.symbol, currency.rub_rate, '') + "\n"
 
     r = requests.get("https://www.cbr-xml-daily.ru/latest.js").json()['rates']
 
     rates_text += f"\nКурс ЦБ:\n"\
-        f"{rate_to_str('RUB', 'CNY', round(1/r['CNY'], 4))}\n"\
-        f"{rate_to_str('RUB', 'THB', round(1/r['THB'], 4))}\n"\
-        f"{rate_to_str('RUB', 'USD', round(1/r['USD'], 4))}\n"
+        f"{rate_to_str('RUB', 'CNY', round(1/r['CNY'], 2))}\n"\
+        f"{rate_to_str('RUB', 'THB', round(1/r['THB'], 2))}\n"\
+        f"{rate_to_str('RUB', 'USD', round(1/r['USD'], 2))}\n"
 
     return rates_text
 

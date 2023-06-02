@@ -5,7 +5,7 @@ from typing import Dict, Union
 from etc.keyboards import Keyboards
 from etc.states import DealStates, UserStates
 from etc.texts import BOT_TEXTS
-from etc.utils import find_month_start, find_next_month, get_max_id_doc
+from etc.utils import find_month_start, find_next_month, get_max_id_doc, notifyAdmins
 from loader import dp, bot
 from aiogram.types import CallbackQuery, Message
 from aiogram.dispatcher import FSMContext
@@ -112,7 +112,7 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
         #     return
         
         # Get admin
-        admin: TgUser = TgUser.objects.get({"_id": user.invited_by.id})
+        admin: TgUser = TgUser.objects.raw({"is_admin": True}).first()
 
         # Create deal
         maxExtIDDealID = get_max_id_doc(Deal, {"created_at": {"$lt": find_next_month(datetime.datetime.now()),
@@ -144,7 +144,7 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
         
         await c.message.answer(deal.get_user_text(), reply_markup=Keyboards.Deals.deal_info(user, deal))
         await state.finish()
-        await bot.send_message(user.invited_by.id, f"⭐ Открылась новая заявка на свап <code>#{deal.id}</code>!\n\nПримерный профит: <code>{deal.profit} {deal.source_currency.symbol}</code>", reply_markup=Keyboards.Admin.jump_to_deal(deal))
+        await notifyAdmins(f"⭐ Открылась новая заявка на свап <code>#{deal.id}</code>!\n\nПримерный профит: <code>{deal.profit:.2f} {deal.source_currency.symbol}</code>", reply_markup=Keyboards.Admin.jump_to_deal(deal))
         
 
 
@@ -166,8 +166,8 @@ async def answer_deal_preview(m: Message, stateData: Dict):
 
     await m.answer("⭐ Заявка на свап готова! Подтвердите нажатием кнопки\n\n❗Не забудьте при необходимости добавить дополнительную информацию\n\n"
                    f"<b>{deal.dir_text()}</b>\n"
-                   f"📤 Отдаёте: <code>{deal.deal_value:.4f}</code> <code>{deal.source_currency.symbol}</code>\n"
-                   f"📥 Получаете: <code>{deal.target_currency.rate_with(deal.source_currency) * deal.deal_value:.4f}</code> <code>{deal.target_currency.symbol}</code>\n"
+                   f"📤 Отдаёте: <code>{deal.deal_value:.2f}</code> <code>{deal.source_currency.symbol}</code>\n"
+                   f"📥 Получаете: <code>{deal.target_currency.rate_with(deal.source_currency) * deal.deal_value:.2f}</code> <code>{deal.target_currency.symbol}</code>\n"
                    f"💱 Курс: <b>{deal.get_rate_text()}</b>\n"
                    f"\n"
                    f"📝 Дополнительная информация: <b> {deal.additional_info} </b>\n", 
@@ -223,9 +223,11 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
 
     deal: Deal = (await state.get_data())['deal']
     rate: float  = (await state.get_data())['rate']
+    if deal.rate <= 1 and rate > 1:
+        rate = 1/ rate
 
     
     await state.finish()   
-    await bot.send_message(user.invited_by.id, f"💡 Покупатель <a href='tg://user?id={user.id}'>{user.real_name}</a> предложил другой курс по свапу <code>#{deal.id}</code> {deal.dir_text()}", reply_markup=Keyboards.Admin.suggested_rate(deal, rate))
+    await notifyAdmins(f"💡 Покупатель <a href='tg://user?id={user.id}'>{user.real_name}</a> предложил другой курс по свапу <code>#{deal.id}</code> {deal.dir_text()}", reply_markup=Keyboards.Admin.suggested_rate(deal, rate))
     await m.answer(f"⭐ Вы предложили курс по свапу <code>#{deal.id}</code>\n")
 
