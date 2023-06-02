@@ -66,7 +66,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         deal.rate = rate
         deal.save()
 
-        text = f"✅ Предлжение изменения курса свапа <code>#{deal.id}</code> на <b>{rate}</b> одобрено"
+        text = f"✅ Предлжение изменения курса свапа <code>#{deal.id}</code> на <b>{rate if rate >= 1 else 1/ rate:.2f}</b> одобрено"
         await c.message.edit_text(text)
         await bot.send_message(deal.owner.id, text, reply_markup=Keyboards.Deals.jump_to_deal(deal))
 
@@ -81,7 +81,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         deal: Deal = Deal.objects.get({"_id": int(actions[1])})
         rate = float(actions[2])
 
-        text = f"⛔ Предлжение изменения курса свапа <code>#{deal.id}</code> на <b>{rate}</b> отклонено"
+        text = f"⛔ Предлжение изменения курса свапа <code>#{deal.id}</code> на <b>{rate if rate >= 1 else 1/ rate:.2f}</b> отклонено"
         await c.message.edit_text(text)
         await bot.send_message(deal.owner.id, text, reply_markup=Keyboards.Deals.jump_to_deal(deal))
         

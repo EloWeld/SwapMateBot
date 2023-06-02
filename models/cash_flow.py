@@ -49,10 +49,10 @@ class CashFlow(MongoModel):
             self.id,
             getattr(self.CashFlowType, self.type).value,
             self.source_currency.symbol + " " + self.source_currency_type if self.source_currency else "",
-            self.source_amount,
+            round(self.source_amount, 2),
             self.target_currency.symbol + " " + self.target_currency_type if self.target_currency else "",
-            self.target_amount,
+            round(self.target_amount, 2),
             self.additional_data,
-            self.additional_amount,
+            round(self.additional_amount, 2),
             self.created_at.strftime('%d.%m.%Y %H:%M:%S'),
         ]

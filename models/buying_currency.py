@@ -26,9 +26,9 @@ class BuyingCurrency(MongoModel):
             self.owner.id,
             self.source_currency.symbol,
             self.target_currency.symbol,
-            self.source_amount,
-            self.target_amount,
-            self.exchange_rate,
+            round(self.source_amount, 2),
+            round(self.target_amount, 2),
+            round(self.exchange_rate if self.exchange_rate > 1 else 1/self.exchange_rate, 2),
             self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
         ]
         

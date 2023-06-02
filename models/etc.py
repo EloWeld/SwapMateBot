@@ -30,7 +30,7 @@ class Currency(MongoModel):
             "Да" if self.is_crypto else "Нет",
             self.symbol,
             "Да" if self.is_available else "Нет",
-            self.rub_rate,
+            round(self.rub_rate, 2),
             self.pool_balance
         ]
         
