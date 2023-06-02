@@ -134,7 +134,7 @@ class Keyboards:
         @staticmethod
         def suggested_rate(deal: Deal, rate: float):
             k = IKeyboard()
-            k.row(IButton(f"✅ Одобрить изменение курса {rate if rate >= 1 else 1/  rate:.4f}", callback_data=f"|admin:accept_rate:{deal.id}:{rate}"))
+            k.row(IButton(f"✅ Одобрить изменение курса {rate if rate >= 1 else 1/  rate:.2f}", callback_data=f"|admin:accept_rate:{deal.id}:{rate}"))
             k.row(IButton("✏️ Изменить на своё усмотрение", callback_data=f"|admin:change_rate:{deal.id}"))
             k.row(IButton("❌ Отклонить предложение", callback_data=f"|admin:decline_rate:{deal.id}:{rate}"))
             return k
@@ -164,7 +164,14 @@ class Keyboards:
             k.row(IButton(BOT_TEXTS.BackButton,
                   callback_data=f"|admin:deals_with_status:{deal.status}"))
             return k
+        
+        @staticmethod
+        def confirm_broadcast():
+            k = IKeyboard()
+            k.row(IButton("✅ Подтвердить", callback_data=f"|admin_broadcast:confirm"),
+                  IButton("🛑 Отмена", callback_data=f"|admin_broadcast:cancel"))
             return k
+
 
         @staticmethod
         def choose_target_currency_change_rate(currencies: List[Currency]):
@@ -247,16 +254,31 @@ class Keyboards:
             return k
 
         @staticmethod
-        def deal_request_done():
+        def deal_request_done(stateData):
             k = IKeyboard()
-            k.row(IButton(BOT_TEXTS.AddInfo,
+            k.row(IButton(BOT_TEXTS.ChangeAddInfo if 'additional_info' in stateData else BOT_TEXTS.AddInfo,
                      callback_data="|deal_calc:add_info"))
+            k.row(IButton(BOT_TEXTS.ChangeDealDir,
+                     callback_data="|deal_calc:start_deal"))
             k.row()
             k.insert(IButton(BOT_TEXTS.Cancel,
                      callback_data="|deal_calc:cancel_deal"))
             k.insert(IButton(BOT_TEXTS.SendDeal,
                      callback_data="|deal_calc:send_deal"))
             return k
+        
+        @staticmethod
+        def choose_convertor_dir():
+            k = IKeyboard()
+            k.row()
+            k.insert(IButton("📤 Хочу отдать",
+                     callback_data="|deal_calc:wanna_give"))
+            k.insert(IButton("📥 Хочу получить",
+                     callback_data="|deal_calc:wanna_receive"))
+            k.row(IButton(BOT_TEXTS.BackButton,
+                     callback_data="|convertor:deal_calc"))
+            return k
+            
 
     class Deals:
         @staticmethod
@@ -325,6 +347,7 @@ class Keyboards:
             k.row(IButton(BOT_TEXTS.MyDeals, callback_data="|admin:my_deals"))
             # k.row(IButton(BOT_TEXTS.MyRates, callback_data="|admin:my_rates"))
             k.row(IButton(BOT_TEXTS.MyUsers, callback_data="|admin_slave_users:0"))
+            k.row(IButton(BOT_TEXTS.Broadcast, callback_data="|admin_broadcast:go"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|main"))
         return k
 
@@ -342,3 +365,25 @@ class Keyboards:
         k = IKeyboard()
         k.row(IButton(BOT_TEXTS.BackButton, callback_data=path))
         return k
+
+
+    @staticmethod
+    def hide():
+        k = IKeyboard()
+        k.row(IButton(BOT_TEXTS.Hide, callback_data="|hide"))
+        return k
+
+    @staticmethod
+    def generate_from_text(text):
+        k = IKeyboard()
+        try:
+            if text == "-":
+                return None
+            for row in text.split('\n'):
+                k.row()
+                for item in row.split(']['):
+                    k.insert(IButton(text=item.split('+')[0][1:-1],
+                                     url=item.split('+')[1][1:-1]))
+            return k
+        except Exception:
+            return None

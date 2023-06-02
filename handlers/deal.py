@@ -65,13 +65,28 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
             await state.finish()
         except Exception as e:
             await c.message.delete()
-
+            
+    if actions[0] == "wanna_give":
+        selFrom: Currency = stateData.get('sel_from')
+        selTo: Currency = stateData.get('sel_to')
+        await c.message.edit_text(f"📈 Введите количество <b>{selFrom.symbol}</b> которые вы хотите свапнуть на <b>{selTo.symbol}</b>", reply_markup=Keyboards.back('|convertor:deal_calc'))
+        await state.update_data(dir="wanna_give")
+        await DealStates.Value.set()
+            
+    if actions[0] == "wanna_receive":
+        selFrom: Currency = stateData.get('sel_from')
+        selTo: Currency = stateData.get('sel_to')
+        await c.message.edit_text(f"📈 Введите количество <b>{selTo.symbol}</b> которое хотите получить, отдав <b>{selFrom.symbol}</b>", reply_markup=Keyboards.back('|convertor:deal_calc'))
+        await state.update_data(dir="wanna_receive")
+        await DealStates.Value.set()
+        
+        
     if actions[0] == "start_deal":
         try:
             selFrom: Currency = stateData.get('sel_from')
             selTo: Currency = stateData.get('sel_to')
-            await c.message.edit_text(f"📈 Введите количество <b>{selFrom.symbol}</b> которые вы хотите свапнуть на <b>{selTo.symbol}</b>", reply_markup=Keyboards.back('|convertor:deal_calc'))
-            await DealStates.Value.set()
+            await c.message.edit_text(f"↔ Выберите <b>Хочу отдать</b> для ввода количества исходной валюты которую хотите отдать\n\n"
+                                      f"↔ Выберите <b>Хочу получить</b> для ввода количества конечной валюты которую хотите получить", reply_markup=Keyboards.Calc.choose_convertor_dir())
         except Exception as e:
             await c.message.delete()
 
@@ -171,7 +186,7 @@ async def answer_deal_preview(m: Message, stateData: Dict):
                    f"💱 Курс: <b>{deal.get_rate_text()}</b>\n"
                    f"\n"
                    f"📝 Дополнительная информация: <b> {deal.additional_info} </b>\n", 
-                   reply_markup=Keyboards.Calc.deal_request_done())
+                   reply_markup=Keyboards.Calc.deal_request_done(stateData))
 
 @dp.message_handler(state=UserStates.DealAdditionalInfo)
 async def _(m: Message, state: FSMContext = None, user: TgUser = None):
@@ -192,20 +207,27 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
     try:
         deal_value = float(m.text.strip())
         assert deal_value != 0
+        
+        if (await state.get_data())['dir'] == 'wanna_receive':
+            stateData = await state.get_data()
+            selFrom: Currency = stateData.get('sel_from')
+            selTo: Currency = stateData.get('sel_to')
+            deal_value /= selTo.rate_with(selFrom)
+        
         await state.update_data(deal_value=deal_value)
     except Exception as e:
         await m.answer(BOT_TEXTS.InvalidValue)
         return
     stateData = {} if state is None else await state.get_data()
     
-    if str(stateData['sel_from'].id) not in user.balances:
-        await m.answer(f"⚠️ У вас в кошельке нет валюты <code>{stateData['sel_from'].symbol}</code>!", reply_markup=Keyboards.back('|convertor:deal_calc'))
-        return 
+    # if str(stateData['sel_from'].id) not in user.balances:
+    #     await m.answer(f"⚠️ У вас в кошельке нет валюты <code>{stateData['sel_from'].symbol}</code>!", reply_markup=Keyboards.back('|convertor:deal_calc'))
+    #     return 
     
-    if user.balances[str(stateData['sel_from'].id)] < deal_value:
-        balance = user.balances[str(stateData['sel_from'].id)]
-        await m.answer(f"⚠️ Ваш баланс: <code>{balance} {stateData['sel_from'].symbol}</code>. Для такого обмена пополните баланс на <code>{deal_value - balance} {stateData['sel_from'].symbol}</code>!", reply_markup=Keyboards.back('|convertor:deal_calc'))
-        return
+    # if user.balances[str(stateData['sel_from'].id)] < deal_value:
+    #     balance = user.balances[str(stateData['sel_from'].id)]
+    #     await m.answer(f"⚠️ Ваш баланс: <code>{balance} {stateData['sel_from'].symbol}</code>. Для такого обмена пополните баланс на <code>{deal_value - balance} {stateData['sel_from'].symbol}</code>!", reply_markup=Keyboards.back('|convertor:deal_calc'))
+    #     return
 
 
     await answer_deal_preview(m, stateData)

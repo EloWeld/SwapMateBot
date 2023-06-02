@@ -9,6 +9,7 @@ class BotTexts(BaseModel):
     MyDeals = "🤝 Мои свапы"
     MyRates = "📈 Мои курсы"
     MyUsers = "👥 Пользователи"
+    Broadcast = "📢 Рассылка"
     Profile = "👩🏻‍💻 Профиль"
 
     DealCalc = "📊 ДАЮ-ПОЛУЧАЮ"
@@ -27,6 +28,7 @@ class BotTexts(BaseModel):
     SendDeal = "✅ Отправить"
     Cancel = "❌ Отменить"
     AddInfo = "📝 Добавить доп. информацию"
+    ChangeAddInfo = "📝 Изменить доп. информацию"
 
     SendReceipt = "🧾 ОТПРАВИТЬ ЧЕК"
     Finish = "🏁 Завершить"
@@ -34,6 +36,8 @@ class BotTexts(BaseModel):
 
     SuggestRate = "💡 Предложить курс"
     OpenUser = "👤 Открыть профиль пользователя"
+    
+    ChangeDealDir = "🖋️ Изменить"
 
     verbose_emoji = {
         "CANCELLED": "⛔",

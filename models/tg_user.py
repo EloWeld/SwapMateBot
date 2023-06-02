@@ -44,7 +44,7 @@ def get_owner():
 # cc.save()
 # cc = Currency(3, ["Юрик", "Alipay", "WeChat"], False, get_owner(), "CNY", "CNY", True, 11.36, 100)
 # cc.save()
-# cc = Currency(4, ["Юрик Китай", "Юрик Гк"], False, get_owner(), "USD", "USD", True, 80.69, 100)
+# cc = Currency(4, ["Юрик Китай", "Юрик ГК"], False, get_owner(), "USD", "USD", True, 80.69, 100)
 # cc.save()
 # cc = Currency(5, [], True, get_owner(), "USDT", "USDT", True, 80.89, 100)
 # cc.save()

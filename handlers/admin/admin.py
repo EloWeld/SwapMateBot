@@ -37,8 +37,9 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         if state:
             await state.finish()
         await c.message.edit_text("Админ меню", reply_markup=Keyboards.admin_menu(user))
+        
         return
-    
+
     if actions[0] == "setup_exchange_rates":
         currencies: List[Currency] = Currency.objects.raw({"is_available": True})
         await c.message.edit_text("💎 Выберите валюту чтобы установить её курс\n\nТекущие курсы:\n" + get_rates_text(), 

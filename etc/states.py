@@ -1,6 +1,8 @@
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 class AdminInputStates(StatesGroup):
+    BroadcastData = State()
+    BroadcastLinks = State()
     SendReceipt = State()
     ChangeRate = State()
     BuyCurrencyTargetAmount = State()

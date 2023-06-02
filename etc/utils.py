@@ -38,11 +38,12 @@ def split_long_text(text: str, max_length: int = 4000):
     return parts
 
 
-def get_rates_text():
+def get_rates_text(is_demo: bool = False):
     currencies: List[Currency] = Currency.objects.raw({"is_available": True})
     rates_text = ""
-    for currency in currencies:
-        rates_text += rate_to_str('RUB', currency.symbol, currency.rub_rate, '') + "\n"
+    if not is_demo:
+        for currency in currencies:
+            rates_text += rate_to_str('RUB', currency.symbol, currency.rub_rate, '') + "\n"
 
     r = requests.get("https://www.cbr-xml-daily.ru/latest.js").json()['rates']
 

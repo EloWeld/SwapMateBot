@@ -43,7 +43,7 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
                  "Примеры использования:\n"
                  "<code>/buy RUB 79 USD 1 </code>\n\n"
                  "<code>/sheets 1eud4AwOBH8CAYAMqA0dvKfPxBoF6LU6HEIVO-A6r6_s</code>\n\n"
-                 "<code>/addCurrency USD NO YES 79.6 100 [Гк;Физ лицо;Юр лицо]</code>\n\n"
+                 "<code>/addCurrency USD NO YES 79.6 100 [ГК;Физ лицо;Юр лицо]</code>\n\n"
                  "<code>/addCurrency USD NO YES 79.6 100 []</code>\n\n"
                  "<code>/delCurrency USD</code>\n\n"
                  "<code>/setConst RefillsChatID -1001968498</code>\n\n"
