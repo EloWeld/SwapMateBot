@@ -5,7 +5,9 @@ from loader import bot, dp
 from aiogram.types import Message, CallbackQuery, BotCommand, BotCommandScopeAllPrivateChats
 from models.tg_user import TgUser
 from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import Text
 
+@dp.message_handler(Text(BOT_TEXTS.MainMenuButton), state="*")
 @dp.message_handler(commands="start", state="*")
 async def start_cmd(m:Message, state:FSMContext=None):
     if state:
@@ -21,6 +23,7 @@ async def start_cmd(m:Message, state:FSMContext=None):
     user.save()
 
     if user.is_member:
+        await m.answer("🏠", reply_markup=Keyboards.start_menu_bottom(), disable_notification=True)
         await m.answer(BOT_TEXTS.MainMenuText, reply_markup=Keyboards.start_menu(user))
         await bot.set_my_commands([
             BotCommand("start", "Перезапуск бота")

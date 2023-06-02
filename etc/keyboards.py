@@ -337,6 +337,12 @@ class Keyboards:
         return k
 
     @staticmethod
+    def start_menu_bottom():
+        k = Keyboard(resize_keyboard=True)
+        k.row(BOT_TEXTS.MainMenuButton)
+        return k
+
+    @staticmethod
     def admin_menu(user: TgUser):
         k = IKeyboard()
         if user.is_admin:
@@ -348,6 +354,7 @@ class Keyboards:
             # k.row(IButton(BOT_TEXTS.MyRates, callback_data="|admin:my_rates"))
             k.row(IButton(BOT_TEXTS.MyUsers, callback_data="|admin_slave_users:0"))
             k.row(IButton(BOT_TEXTS.Broadcast, callback_data="|admin_broadcast:go"))
+            k.row(IButton(BOT_TEXTS.RefillsChat, url='https://t.me/+fJwCx1FA6pNkNzRi'))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|main"))
         return k
 

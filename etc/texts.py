@@ -38,6 +38,9 @@ class BotTexts(BaseModel):
     OpenUser = "👤 Открыть профиль пользователя"
     
     ChangeDealDir = "🖋️ Изменить"
+    
+    RefillsChat = "📥 Чат пополнений"
+    MainMenuButton = "🏠 На главную"
 
     verbose_emoji = {
         "CANCELLED": "⛔",

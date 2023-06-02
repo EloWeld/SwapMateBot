@@ -143,7 +143,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
             target_currency=deal.target_currency,
             target_amount=deal.deal_value * deal.rate,
             additional_data="По курсу:",
-            additional_amount=deal.rate,
+            additional_amount=deal.rate if deal.rate > 1 else 1/deal.rate,
             created_at=datetime.datetime.now(),
         ) 
         cash_flow.save()

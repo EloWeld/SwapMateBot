@@ -34,7 +34,7 @@ class SheetsSyncer:
                     rows.append(cf.as_row())
             rows.append(["Текущие балансы:"])
             for balance_str_currency_key, balance_value in member.balances.items():
-                rows.append([Currency.objects.get({"_id": int(balance_str_currency_key)}).symbol, balance_value])
+                rows.append([Currency.objects.get({"_id": int(balance_str_currency_key)}).symbol, round(balance_value, 2)])
                 
             GoogleSheetsService.row_style(sheet, "bold|highlight")
             sheet.append_rows(rows)
