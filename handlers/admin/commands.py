@@ -81,9 +81,9 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
                 x.pool_balance = 0
                 x.save()
                 
-            BuyingCurrency.objects.delete_many({})
-            Deal.objects.delete_many({})
-            CashFlow.objects.delete_many({})
+            BuyingCurrency.objects.raw({}).delete()
+            Deal.objects.raw({}).delete()
+            CashFlow.objects.raw({}).delete()
             
             users: List[TgUser] = TgUser.objects.all()
             for x_user in users:
@@ -94,7 +94,7 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
                         
         except Exception as e:
             await m.answer(BOT_TEXTS.InvalidValue)
-            loguru.logger.error(f"Error while setConst: {e}; traceback: {traceback.format_exc()}")
+            loguru.logger.error(f"Error while clearAll: {e}; traceback: {traceback.format_exc()}")
             return
         
 

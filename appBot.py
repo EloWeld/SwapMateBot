@@ -2,9 +2,12 @@ from aiogram.utils import executor
 from loader import *
 
 from handlers import *
+from loguru import logger
 
 
 def main():
+    # Добавляем обработчик для записи логов в файл
+    logger.add("file.log")
     executor.start_polling(dp, on_startup=onBotStartup)
 
 
