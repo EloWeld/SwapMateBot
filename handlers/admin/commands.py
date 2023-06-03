@@ -13,6 +13,7 @@ from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram.dispatcher.filters import ContentTypeFilter, Command
 from aiogram.dispatcher import FSMContext
 from models.buying_currency import BuyingCurrency
+from models.cash_flow import CashFlow
 from models.deal import Deal
 from models.etc import Currency
 from models.tg_user import TgUser
@@ -68,6 +69,33 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
         await m.answer(BOT_TEXTS.InvalidValue)
         loguru.logger.error(f"Error while setConst: {e}; traceback: {traceback.format_exc()}")
         return
+
+
+
+@dp.message_handler(Command("clearAll"), content_types=[ContentType.TEXT], state="*")
+async def _(m: Message, state: FSMContext = None, user: TgUser = None):    
+    if user.is_admin:
+        try:
+            currencies: List[Currency] = Currency.objects.all()
+            for x in currencies:
+                x.pool_balance = 0
+                x.save()
+                
+            BuyingCurrency.objects.delete_many({})
+            Deal.objects.delete_many({})
+            CashFlow.objects.delete_many({})
+            
+            users: List[TgUser] = TgUser.objects.all()
+            for x_user in users:
+                x_user.cash_flow = []
+                x_user.save()
+                
+            await m.answer("Готово!")
+                        
+        except Exception as e:
+            await m.answer(BOT_TEXTS.InvalidValue)
+            loguru.logger.error(f"Error while setConst: {e}; traceback: {traceback.format_exc()}")
+            return
         
 
 @dp.message_handler(Command("buy"), content_types=[ContentType.TEXT], state="*")

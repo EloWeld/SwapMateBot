@@ -28,7 +28,8 @@ async def _(m: Message, state: FSMContext = None):
         return
     
     target_currency = (await state.get_data())['target_currency']
-    currencies: List[Currency] = Currency.objects.raw({"is_available": True, "_id": {"$ne": target_currency.id}})
+    #currencies: List[Currency] = Currency.objects.raw({"is_available": True, "_id": {"$ne": target_currency.id}})
+    currencies: List[Currency] = Currency.objects.raw({"is_available": True})
     
     await m.answer("Выберите тип валюты, за которую вы купили:",
                         reply_markup=Keyboards.Admin.Currencies.choose_target_currency_buy_from(currencies))
