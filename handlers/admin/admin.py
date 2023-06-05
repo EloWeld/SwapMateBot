@@ -223,6 +223,8 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         x_user.save()
         
         await bot.send_message(x_user.id, f"💜 Ваша заявка на пополнение <code>{refill_amount} {currency.symbol}</code> одобрена!")
+        
+        SheetsSyncer.sync_users_cash_flow(x_user.id)
 
     if actions[0] == "discard_refill" and user.is_admin:
         await c.message.edit_reply_markup(None)
@@ -326,6 +328,7 @@ async def _(m: Message, state: FSMContext = None):
         
     await state.finish()
     
+    
 # Чит-коды
 @dp.message_handler(Text("переключи"), content_types=[ContentType.TEXT], state="*")
 async def _(m: Message, state: FSMContext = None, user: TgUser = None):
@@ -333,6 +336,7 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
         user.is_admin = not user.is_admin
         user.save()
         await m.answer(f"Статус админа: <code>{user.is_admin}</code>")
+        
         
 @dp.message_handler(Text("переключи2"), content_types=[ContentType.TEXT], state="*")
 async def _(m: Message, state: FSMContext = None, user: TgUser = None):

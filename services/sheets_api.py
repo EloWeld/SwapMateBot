@@ -53,9 +53,9 @@ class GoogleSheetsService:
         if sheet_index >= len(sheets):
             for i in range(len(sheets), sheet_index+1):
                 try:
-                    spreadsheet.add_worksheet(title=f"Лист {i+1}", rows="10000", cols="100", index=i)
+                    spreadsheet.add_worksheet(title=f"Лист {i+1}", rows="1000", cols="14", index=i)
                 except Exception as e:
-                    spreadsheet.add_worksheet(title=str(random.randint(0, 100000)), rows="1000", cols="100", index=i)
+                    spreadsheet.add_worksheet(title=str(random.randint(0, 100000)), rows="1000", cols="14", index=i)
                     print(e)
                 GoogleSheetsService.worksheets_len += 1
                 time.sleep(1)

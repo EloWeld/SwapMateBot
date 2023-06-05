@@ -7,13 +7,11 @@ from services.sheets_syncer import SheetsSyncer
 
 def scheduled_sync():
     # Выполнять функцию каждые 5 минут
-    for owner in TgUser.objects.raw({"is_admin": True}):
-        SheetsSyncer.sync_currency_purchases()
-        SheetsSyncer.sync_deals()
-        SheetsSyncer.sync_currencies()
-        SheetsSyncer.sync_users_cash_flow()
-        loguru.logger.info("Synced")
-        break
+    SheetsSyncer.sync_currency_purchases()
+    SheetsSyncer.sync_deals()
+    SheetsSyncer.sync_currencies()
+    SheetsSyncer.sync_users_cash_flow()
+    loguru.logger.info("Synced")
 
 
 def main():

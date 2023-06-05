@@ -15,6 +15,8 @@ from models.tg_user import TgUser
 from etc.keyboards import Keyboards
 from aiogram.dispatcher.filters import Text
 
+from services.sheets_syncer import SheetsSyncer
+
 async def send_slave_user(receiver_user: TgUser, user: TgUser, edit_message: Union[Message, None] = None, reply_markup=None):
     swap_count = Deal.objects.raw({"owner": user.id}).count()
     balances_text = "<code>Нет</code>"
@@ -131,3 +133,5 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
     await m.answer("✅ Баланс изменён!")
     await state.finish()
     await send_slave_user(user, x_user)
+    
+    SheetsSyncer.sync_users_cash_flow(x_user.id)
