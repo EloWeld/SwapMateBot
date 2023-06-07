@@ -10,6 +10,7 @@ class AdminInputStates(StatesGroup):
     BuyCurrencySourceAmount = State()
     ChangeUserBalance = State()
     ChangeDealRate = State()
+    ChangeUserRealName = State()
 
 class IdentifyState(StatesGroup):
     Name = State()

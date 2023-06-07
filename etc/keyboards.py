@@ -69,7 +69,9 @@ class Keyboards:
                 k.row()
 
                 k.insert(IButton("💰 Изменить баланс", callback_data=f"|admin_slave_users:change_balance:{user.id}"))
-
+                k.insert(IButton("🏷️ Изменить имя", callback_data=f"|admin_slave_users:change_name:{user.id}"))
+                
+                k.row()
                 if user.is_member or user.is_admin:
                     k.insert(IButton("⤵️ Понизить", callback_data=f"|admin_slave_users:downgrade:{user.id}"))
                 if not user.is_admin:
@@ -380,6 +382,14 @@ class Keyboards:
         k = IKeyboard()
         k.row(IButton(BOT_TEXTS.Hide, callback_data="|hide"))
         return k
+    
+    
+    @staticmethod
+    def cancel_with_clear():
+        k = IKeyboard()
+        k.row(IButton(BOT_TEXTS.Cancel, callback_data="|cancel_with_clear"))
+        return k
+    
 
     @staticmethod
     def generate_from_text(text):

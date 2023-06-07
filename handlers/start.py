@@ -48,6 +48,13 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
 async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     await c.answer()
     await c.message.delete()
+        
+        
+@dp.callback_query_handler(lambda c: c.data.startswith('|cancel_with_clear'), state="*")
+async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
+    await c.answer()
+    await c.message.delete()
+    await state.finish()
             
 @dp.callback_query_handler(lambda c: c.data.startswith('|main'), state="*")
 async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):

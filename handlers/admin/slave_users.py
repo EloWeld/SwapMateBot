@@ -56,9 +56,16 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     elif actions[0] == "change_balance":
         await c.answer()
         x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
-        await c.message.answer(f"✏️ Введите валюту и новый баланс пользователя\n\nПример: <code>USDT 50</code>")
+        await c.message.answer(f"✏️ Введите валюту и новый баланс пользователя\n\nПример: <code>USDT 50</code>", reply_markup=Keyboards.cancel_with_clear())
         await state.update_data(x_user=x_user)
         await AdminInputStates.ChangeUserBalance.set()
+        
+    elif actions[0] == "change_name":
+        await c.answer()
+        x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
+        await c.message.answer(f"✏️ Введите новое отображаемое имя пользователя", reply_markup=Keyboards.cancel_with_clear())
+        await state.update_data(x_user=x_user)
+        await AdminInputStates.ChangeUserRealName.set()
 
     elif actions[0] == "downgrade":
         x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
@@ -135,3 +142,25 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
     await send_slave_user(user, x_user)
     
     SheetsSyncer.sync_users_cash_flow(x_user.id)
+    
+    
+
+@dp.message_handler(content_types=[ContentType.TEXT], state=AdminInputStates.ChangeUserRealName)
+async def _(m: Message, state: FSMContext = None, user: TgUser = None):
+    # Get currency
+    stateData = await state.get_data()
+    x_user: TgUser = stateData['x_user']
+    
+    try:
+        new_name = m.text.strip()
+        x_user.real_name = new_name
+    except Exception as e:
+        await m.answer(BOT_TEXTS.InvalidValue)
+        return
+    
+    x_user.save()
+
+    await m.answer("✅ Имя пользователя изменено!")
+    await bot.send_message(x_user.id, f"ℹ️ Ваше отображаемое имя пользователя изменено на <code>{new_name}</code>!")
+    await state.finish()
+    await send_slave_user(user, x_user)
