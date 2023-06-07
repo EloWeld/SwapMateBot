@@ -63,7 +63,13 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         deal: Deal = Deal.objects.get({"_id": int(actions[1])})
         rate = float(actions[2])
 
+        should_have_to_receive = deal.deal_value * deal.rate
+        will_have_to_give = should_have_to_receive / rate
+        # If user wants to receive
+        if deal.dir == "wanna_receive":
+            deal.deal_value = will_have_to_give
         deal.rate = rate
+        
         deal.save()
 
         text = f"✅ Предлжение изменения курса свапа <code>#{deal.id}</code> на <b>{rate if rate >= 1 else 1/ rate:.2f}</b> одобрено"
@@ -292,6 +298,11 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
         await m.answer(BOT_TEXTS.InvalidValue)
         return
 
+    should_have_to_receive = deal.deal_value * deal.rate
+    will_have_to_give = should_have_to_receive / rate
+    # If user wants to receive
+    if deal.dir == "wanna_receive":
+        deal.deal_value = will_have_to_give
     deal.rate = rate
     deal.save()
 

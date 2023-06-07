@@ -144,6 +144,7 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
                  currency_type_from=stateData.get('sel_from_type', None),
                  currency_type_to=stateData.get('sel_to_type', None),
                  additional_info=stateData.get('additional_info', 'Отсутствует'),
+                 dir=stateData.get('dir', 'wanna_give'),
                  created_at=datetime.datetime.now())
         deal.profit = deal.calculate_profit()
         deal.save()
@@ -170,6 +171,7 @@ async def answer_deal_preview(m: Message, stateData: Dict):
     currency_type_from = '' if currency_type_from is None else currency_type_from
     currency_type_to = '' if currency_type_to is None else currency_type_to
     deal = Deal(
+        dir=stateData.get('dir', 'wanna_give'),
         source_currency=stateData.get('sel_from'),
         target_currency=stateData.get('sel_to'),
         deal_value=stateData.get('deal_value'),

@@ -159,6 +159,7 @@ class Keyboards:
                         callback_data=f"|admin:finish_deal:{deal.id}"))
                 k.insert(IButton(BOT_TEXTS.Cancel,
                         callback_data=f"|admin:cancel_deal:{deal.id}"))
+                k.row(IButton(BOT_TEXTS.ChangeDealRate, callback_data=f"|admin:change_rate:{deal.id}"))
             k.row(IButton(BOT_TEXTS.OpenUser,
                     callback_data=f"|admin_slave_users:user_from_deal:{deal.id}"))
             k.row(IButton(BOT_TEXTS.BackButton,

@@ -16,6 +16,7 @@ class Deal(MongoModel):
 
     id = fields.IntegerField(primary_key=True)
     external_id = fields.IntegerField()
+    dir = fields.CharField(blank=True, default="wanna_give")
     admin: TgUser = fields.ReferenceField(TgUser)
     owner: TgUser = fields.ReferenceField(TgUser)
     deal_value = fields.FloatField()

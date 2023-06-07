@@ -33,7 +33,8 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         await c.message.edit_text("⭐ Актуальные курсы валют ниже\n\n"
                                   + get_rates_text(is_demo), reply_markup=Keyboards.actual_rates() if not is_demo else Keyboards.hide())
     if actions[0] == "deal_calc":
-        
+        await state.finish()
+        stateData = {}
         await c.message.edit_text(get_calc_text(user), 
                                   reply_markup=Keyboards.Calc.main(user, stateData.get('sel_from', None), stateData.get('sel_to', None)))
     if actions[0] == "see_deal":

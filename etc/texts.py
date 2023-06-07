@@ -21,6 +21,7 @@ class BotTexts(BaseModel):
     Previous = "⬅"
     Next = "➡"
     RefillBalance = "📥 Пополнить баланс"
+    ChangeDealRate = "✒️ Изменить курс сделки"
 
     InvalidValue = "❗ Некорректное значение"
 
