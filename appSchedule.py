@@ -1,4 +1,3 @@
-from loader import *
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import loguru
 from models.tg_user import TgUser
