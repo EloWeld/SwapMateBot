@@ -11,8 +11,11 @@ from models.tg_user import TgUser
 from pymodm import MongoModel
 
 
-def rate_to_str(c1, c2, rate, postfix=""):
-    return f"1 {c2}{postfix} = {rate:.2f} {c1}"
+def rate_to_str(c1: str, c2: str, types: List[str], rub_rate, postfix=""):
+    t = f"1 {c2}{postfix} = {rub_rate:.2f} {c1}"
+    if types:
+        t += f" ({', '.join(types)})"
+    return t
 
 
 async def notifyAdmins(text: str, reply_markup=None):
@@ -43,14 +46,14 @@ def get_rates_text(is_demo: bool = False):
     rates_text = ""
     if not is_demo:
         for currency in currencies:
-            rates_text += rate_to_str('RUB', currency.symbol, currency.rub_rate, '') + "\n"
+            rates_text += rate_to_str('RUB', currency.symbol, currency.types, currency.rub_rate, '') + "\n"
 
     r = requests.get("https://www.cbr-xml-daily.ru/latest.js").json()['rates']
 
     rates_text += f"\nКурс ЦБ:\n"\
-        f"{rate_to_str('RUB', 'CNY', round(1/r['CNY'], 2))}\n"\
-        f"{rate_to_str('RUB', 'THB', round(1/r['THB'], 2))}\n"\
-        f"{rate_to_str('RUB', 'USD', round(1/r['USD'], 2))}\n"
+        f"{rate_to_str('RUB', 'CNY', [], round(1/r['CNY'], 2))}\n"\
+        f"{rate_to_str('RUB', 'THB', [], round(1/r['THB'], 2))}\n"\
+        f"{rate_to_str('RUB', 'USD', [], round(1/r['USD'], 2))}\n"
 
     return rates_text
 

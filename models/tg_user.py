@@ -34,17 +34,6 @@ class TgUser(MongoModel):
         collection_name = 'Users'
         
 
-def get_owner():
+def random_owner():
     from models.tg_user import TgUser
-    return TgUser.objects.get({"_id": 6069303965})        
-
-# cc = Currency(1, ["Физик"], False, get_owner(), "THB", "THB", True, 2.32347, 100)
-# cc.save()
-# cc = Currency(2, ["Нал", "Tinkoff QR", "Tinkoff CashIn", "АльфаБанк CashIn"], False, get_owner(), "RUB", "RUB", True, 1.0, 100, blocked_target_types=["Tinkoff QR"], blocked_source_types=["Tinkoff CashIn", "АльфаБанк CashIn"])
-# cc.save()
-# cc = Currency(3, ["Юрик", "Alipay", "WeChat"], False, get_owner(), "CNY", "CNY", True, 11.36, 100)
-# cc.save()
-# cc = Currency(4, ["Юрик Китай", "Юрик ГК"], False, get_owner(), "USD", "USD", True, 80.69, 100)
-# cc.save()
-# cc = Currency(5, [], True, get_owner(), "USDT", "USDT", True, 80.89, 100)
-# cc.save()
+    return TgUser.objects.raw({"is_admin": True}).first()

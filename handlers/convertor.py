@@ -13,18 +13,21 @@ from models.deal import Deal
 from models.etc import Currency
 from models.tg_user import TgUser
 import requests
+from loader import bot
+from aiogram.types import ContentType
+
 
 @dp.callback_query_handler(lambda c: c.data.startswith('|convertor:'), state="*")
-async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
+async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
     actions = c.data.split(':')[1:]
     stateData = {} if state is None else await state.get_data()
-    
+
     if actions[0] == "deals_history":
         deals = Deal.objects.raw({"owner": user.id})
         if not deals:
             await c.answer("🕸️ Ваша история свапов пуста", show_alert=True)
             return
-        
+
         await c.message.edit_text("📊 Ваша история свапов:", reply_markup=Keyboards.Deals.user_deals_history(deals))
     if actions[0] == "actual_rates":
         if state:
@@ -35,7 +38,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     if actions[0] == "deal_calc":
         await state.finish()
         stateData = {}
-        await c.message.edit_text(get_calc_text(user), 
+        await c.message.edit_text(get_calc_text(user),
                                   reply_markup=Keyboards.Calc.main(user, stateData.get('sel_from', None), stateData.get('sel_to', None)))
     if actions[0] == "see_deal":
         try:
@@ -43,21 +46,21 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         except Deal.DoesNotExist as e:
             await c.answer(f"❌ Свап #{actions[1]} не найден", show_alert=True)
             return
-        
+
         await c.message.edit_text(deal.get_user_text(), reply_markup=Keyboards.Deals.deal_info(user, deal))
-        
+
     if actions[0] == "found_cheaper":
         await c.answer()
-        await c.message.edit_text("🛒 Нашли дешевле?\n🎁 Мы предложим цену ещё лучше. \n⚠️ Закрепи фото или ссылку .\n", 
-                               reply_markup=Keyboards.back('|convertor:actual_rates'))
+        await c.message.edit_text("🛒 Нашли дешевле?\n🎁 Мы предложим цену ещё лучше. \n⚠️ Закрепи фото или ссылку .\n",
+                                  reply_markup=Keyboards.back('|convertor:actual_rates'))
         await UserStates.FindCheaper.set()
-from loader import bot
-from aiogram.types import ContentType
+
+
 @dp.message_handler(state=UserStates.FindCheaper, content_types=[ContentType.TEXT, ContentType.PHOTO])
 async def _(m: Message, state: FSMContext, user: TgUser = None):
     stateData = await state.get_data()
     await state.finish()
-    
+
     text = f"Покупатель <a href='tg://user?id={user.id}'>{user.real_name}</a> нашёл курсы выгоднее!\n" \
            f"\n" \
            f"👤 Комментарий пользователя: <b>{m.text if m.text else m.caption if m.caption else '➖'}</b>"
@@ -66,4 +69,4 @@ async def _(m: Message, state: FSMContext, user: TgUser = None):
         if len(m.photo) > 0:
             await bot.send_photo(admin.id, m.photo[0].file_id, caption=text)
         else:
-            await bot.send_message(admin,id, text)
+            await bot.send_message(admin, id, text)
