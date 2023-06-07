@@ -4,7 +4,7 @@ from typing import List
 from etc.states import AdminInputStates
 from etc.texts import BOT_TEXTS
 from etc.utils import get_max_id_doc, get_rates_text
-from loader import bot, dp
+from loader import MDB, Consts, bot, dp
 from aiogram.types import CallbackQuery, Message, ContentType
 from aiogram.dispatcher.filters import ContentTypeFilter
 from aiogram.dispatcher import FSMContext
@@ -281,6 +281,7 @@ async def _(m: Message, state: FSMContext = None):
     await state.finish()
     
     await m.answer("✅ Готово")
+    MDB.Settings.update_one({"id": "Constants"}, {"$set": dict(LAST_RATES_UPDATE=datetime.datetime.now())}) 
     currencies: List[Currency] = Currency.objects.raw({"is_available": True})
     await m.answer("💎 Выберите валюту чтобы установить её курс\n\nТекущие курсы:\n" + get_rates_text(), 
                                 reply_markup=Keyboards.Admin.choose_target_currency_change_rate(currencies))

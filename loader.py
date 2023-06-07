@@ -1,3 +1,4 @@
+import datetime
 from pymongo import MongoClient
 import os
 from os.path import join, dirname
@@ -30,7 +31,11 @@ class ConstantsMetaClass(type):
     def __getattr__(cls, key):
         doc = MDB.Settings.find_one(dict(id="Constants"))
         if not doc:
-            MDB.Settings.insert_one(dict(id="Constants"))
+            MDB.Settings.insert_one(dict(id="Constants",
+                                         BotUsername="???",
+                                         SPREADSHEET_ID=os.environ.get('SPREADSHEET_ID', ''),
+                                         RefillsChatID=os.environ.get('RefillsChatID', 0),
+                                         LAST_RATES_UPDATE=datetime.datetime.now()))
             doc: dict = MDB.Settings.find_one(dict(id="Constants"))
         # If key in constants
         if key in doc:

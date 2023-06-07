@@ -4,7 +4,7 @@ from typing import List
 import loguru
 import pymodm
 import requests
-from loader import MDB, bot
+from loader import MDB, Consts, bot
 from models.deal import Deal
 from models.etc import Currency
 from models.tg_user import TgUser
@@ -47,6 +47,8 @@ def get_rates_text(is_demo: bool = False):
     if not is_demo:
         for currency in currencies:
             rates_text += rate_to_str('RUB', currency.symbol, currency.types, currency.rub_rate, '') + "\n"
+            
+        rates_text += f"\n\n📆 Дата обновления: <code>{Consts.LAST_RATES_UPDATE.strftime('%d.%m.%Y %H:%M')}</code>\n"
 
     r = requests.get("https://www.cbr-xml-daily.ru/latest.js").json()['rates']
 
