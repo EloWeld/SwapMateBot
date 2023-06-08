@@ -9,6 +9,7 @@ from etc.utils import find_month_start, find_next_month, get_max_id_doc, notifyA
 from loader import dp, bot
 from aiogram.types import CallbackQuery, Message
 from aiogram.dispatcher import FSMContext
+from models.buying_currency import BuyingCurrency
 from models.deal import Deal
 from models.etc import Currency
 from models.tg_user import TgUser
@@ -41,7 +42,7 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
 
     if actions[0] in ["sel_from", "sel_to"]:
         await c.answer()
-        selected = Currency.objects.get({"symbol": actions[1]})
+        selected = Currency.objects.get({"_id": int(actions[1])})
         ctype = actions[-1] if len(actions) == 3 else None
         await state.set_state("deal_direction")
         if actions[0] == "sel_from":
@@ -162,8 +163,6 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
         await state.finish()
         await notifyAdmins(f"⭐ Открылась новая заявка на свап <code>#{deal.id}</code>!\n\nПримерный профит: <code>{deal.profit:.2f} {deal.source_currency.symbol}</code>", reply_markup=Keyboards.Admin.jump_to_deal(deal))
         
-
-
 
 async def answer_deal_preview(m: Message, stateData: Dict):
     currency_type_from=stateData.get('sel_from_type', None),

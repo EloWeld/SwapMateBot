@@ -51,7 +51,7 @@ class Keyboards:
             def list(users: List[TgUser], start=0):
                 k = IKeyboard(row_width=2)
                 for user in users[start:start+MAX_INLINE_COUNT]:
-                    member = "🛡️ " if user.is_admin else "👤 " if user.is_member else ""
+                    member = "🛡️ " if user.is_admin else "🙂 " if user.is_member else "👤 "
                     k.insert(IButton(member + f"{user.real_name if user.real_name else f'@{user.username}' if user.username else user.fullname}",
                                      callback_data=f"|admin_slave_users:open:{user.id}"))
                 
@@ -180,18 +180,24 @@ class Keyboards:
         def choose_target_currency_change_rate(currencies: List[Currency]):
             k = IKeyboard()
             for currency in currencies:
-                k.row(IButton(
-                    f"{currency.symbol}", callback_data=f"|admin:set_new_exchange_rate:{currency.id}"))
+                k.row(IButton(currency.with_types(), callback_data=f"|admin:set_new_exchange_rate:{currency.id}"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
             return k
 
         class Currencies:
             @staticmethod
-            def all_pool_currencies(currencies: List[Currency]):
+            def all_pool_currencies(currencies: List[Currency], stateData={}):
                 k = IKeyboard()
+                f = stateData.get('source_currency', None)
+                t = stateData.get('target_currency', None)
                 for currency in currencies:
-                    k.row(IButton(currency.symbol,
-                          callback_data=f"|currency_pool:main:{currency.id}"))
+                    k.row()
+                    k.insert(IButton(f"{currency.with_types()}" if f != currency else f"✅ {currency.with_types()}",
+                          callback_data=f"|currency_pool:source_currency:{currency.id}"))
+                    k.insert(IButton(f"{currency.with_types()}" if t != currency else f"✅ {currency.with_types()}",
+                          callback_data=f"|currency_pool:target_currency:{currency.id}"))
+                if f is not None and t is not None:
+                    k.row(IButton(BOT_TEXTS.Buy, callback_data=f"|currency_pool:buy"))    
                 k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
                 return k
 
@@ -199,18 +205,8 @@ class Keyboards:
             def currency_actions(currency: Currency):
                 k = IKeyboard()
                 k.row(IButton(
-                    f"Купить {currency.symbol}", callback_data=f"|currency_pool:buy:{currency.id}"))
+                    f"Купить {currency.with_types()}", callback_data=f"|currency_pool:buy:{currency.id}"))
                 k.row(IButton(BOT_TEXTS.BackButton,
-                      callback_data=f"|admin:my_currencies"))
-                return k
-
-            @staticmethod
-            def choose_target_currency_buy_from(currencies: List[Currency]):
-                k = IKeyboard()
-                for currency in currencies:
-                    k.row(IButton(
-                        f"За {currency.symbol}", callback_data=f"|buy_currecny:choose_source:{currency.id}"))
-                k.row(IButton(BOT_TEXTS.Cancel,
                       callback_data=f"|admin:my_currencies"))
                 return k
 
@@ -226,9 +222,9 @@ class Keyboards:
                     f = selected_from.symbol if selected_from else None
                     t = selected_to.symbol if selected_to else None
                     k.insert(IButton(f"{currency.symbol}" if f != currency.symbol else f"✅ {currency.symbol}",
-                             callback_data=f"|deal_calc:sel_from:{currency.symbol}"))
+                             callback_data=f"|deal_calc:sel_from:{currency.id}"))
                     k.insert(IButton(f"{currency.symbol}" if t != currency.symbol else f"✅ {currency.symbol}",
-                             callback_data=f"|deal_calc:sel_to:{currency.symbol}"))
+                             callback_data=f"|deal_calc:sel_to:{currency.id}"))
                 else:
                     for ctype in currency.types:
                         k.row()
@@ -239,12 +235,12 @@ class Keyboards:
                             k.insert(IButton('➖', callback_data="|deal_calc:forbidden_choice"))
                         else:
                             k.insert(IButton(f"{currency.symbol} ({ctype})" if f != currency.symbol +
-                                 ctype else f"✅ {currency.symbol} ({ctype})", callback_data=f"|deal_calc:sel_from:{currency.symbol}:{ctype}"))
+                                 ctype else f"✅ {currency.symbol} ({ctype})", callback_data=f"|deal_calc:sel_from:{currency.id}:{ctype}"))
                         if ctype in currency.blocked_target_types:
                             k.insert(IButton('➖', callback_data="|deal_calc:forbidden_choice"))
                         else:
                             k.insert(IButton(f"{currency.symbol} ({ctype})" if t != currency.symbol +
-                                 ctype else f"✅ {currency.symbol} ({ctype})", callback_data=f"|deal_calc:sel_to:{currency.symbol}:{ctype}"))
+                                 ctype else f"✅ {currency.symbol} ({ctype})", callback_data=f"|deal_calc:sel_to:{currency.id}:{ctype}"))
 
             if selected_from and selected_to and selected_from != selected_to:
                 k.row(IButton(BOT_TEXTS.Continue,

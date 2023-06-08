@@ -5,7 +5,7 @@ import json
 class BotTexts(BaseModel):
     AdminMenuBtn = "🛡️ Админка 🛡️"
     SetExchangeRates = "🔄 Установить курсы"
-    MyCurrencies = "💰 Мои валюты"
+    MyCurrencies = "💰 Купить валюту"
     MyDeals = "🤝 Мои свапы"
     MyRates = "📈 Мои курсы"
     MyUsers = "👥 Пользователи"
@@ -20,6 +20,7 @@ class BotTexts(BaseModel):
     Continue = "🏁 Продолжить"
     Previous = "⬅"
     Next = "➡"
+    Buy = "➡️💸➡️"
     RefillBalance = "📥 Пополнить баланс"
     ChangeDealRate = "✒️ Изменить курс сделки"
 
@@ -27,6 +28,7 @@ class BotTexts(BaseModel):
 
     Hide = "➖➖➖Скрыть➖➖➖"
     SendDeal = "✅ Отправить"
+    # BuyCurrency = "💸 Купить валюту себе как Админ 💸"
     Cancel = "❌ Отменить"
     AddInfo = "📝 Добавить доп. информацию"
     ChangeAddInfo = "📝 Изменить доп. информацию"

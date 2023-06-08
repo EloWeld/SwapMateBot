@@ -21,16 +21,19 @@ class BuyingCurrency(MongoModel):
         collection_name = 'BuyingCurrency'
 
     def as_row(self):
-        return [
-            self.id,
-            self.owner.id,
-            self.source_currency.symbol,
-            self.target_currency.symbol,
-            round(self.source_amount, 2),
-            round(self.target_amount, 2),
-            round(self.exchange_rate if self.exchange_rate > 1 else 1/self.exchange_rate, 2),
-            self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        ]
+        try:
+            return [
+                self.id,
+                self.owner.id,
+                self.source_currency.symbol,
+                self.target_currency.symbol,
+                round(self.source_amount, 2),
+                round(self.target_amount, 2),
+                round(self.exchange_rate if self.exchange_rate > 1 else 1/self.exchange_rate, 2),
+                self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            ]
+        except Exception as e:
+            return [e, 0, 0, 0, 0, 0, 0, 0]
         
     
     @staticmethod

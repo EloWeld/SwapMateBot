@@ -1,3 +1,4 @@
+import re
 from pymongo import DESCENDING
 import datetime
 from typing import List
@@ -41,12 +42,12 @@ def split_long_text(text: str, max_length: int = 4000):
     return parts
 
 
-def get_rates_text(is_demo: bool = False):
+def get_rates_text(is_demo: bool = False, for_admin=False):
     currencies: List[Currency] = Currency.objects.raw({"is_available": True})
     rates_text = ""
     if not is_demo:
         for currency in currencies:
-            rates_text += rate_to_str('RUB', currency.symbol, currency.types, currency.rub_rate, '') + "\n"
+            rates_text += rate_to_str('RUB', currency.symbol, currency.types, currency.rub_rate, '') + (f"(Покупка {currency.buy_rub_rate}₽)" if for_admin else '') + "\n"
             
         rates_text += f"\n\n📆 Дата обновления: <code>{Consts.LAST_RATES_UPDATE.strftime('%d.%m.%Y %H:%M')}</code>\n"
 
@@ -99,3 +100,10 @@ def find_month_start(date: datetime.datetime):
         current_date.year, current_date.month, 1, 0, 0, 0, 0)
 
     return first_day
+
+
+# Remove Extra Spaces
+def res(string):
+    # Используем регулярное выражение для замены двойных, тройных и более пробелов на одиночные пробелы
+    processed_string = re.sub(r'\s{2,}', ' ', string)
+    return processed_string
