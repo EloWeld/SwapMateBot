@@ -69,13 +69,3 @@ class City(MongoModel):
         write_concern = WriteConcern(j=True)
         connection_alias = 'pymodm-conn'
         collection_name = 'City'
-
-
-cy = City(id="Moscow", name="Москва")
-cy.save()
-
-cy = City(id="Kransnoyarsk", name="Красноярск")
-cy.save()
-
-cy = City(id="Sochi", name="Сочи")
-cy.save()

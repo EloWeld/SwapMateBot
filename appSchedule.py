@@ -2,6 +2,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import loguru
 from models.tg_user import TgUser
 from services.sheets_syncer import SheetsSyncer
+from loader import *
 
 
 def scheduled_sync():

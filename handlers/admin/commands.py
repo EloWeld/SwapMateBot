@@ -15,7 +15,7 @@ from aiogram.dispatcher import FSMContext
 from models.buying_currency import BuyingCurrency
 from models.cash_flow import CashFlow
 from models.deal import Deal
-from models.etc import Currency
+from models.etc import City, Currency
 from models.tg_user import TgUser, random_owner
 from etc.keyboards import Keyboards
 from aiogram.dispatcher.filters import Text
@@ -194,20 +194,34 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
         cc.save()
         cc = Currency(2, ["Нал", "Tinkoff QR", "Tinkoff CashIn", "АльфаБанк CashIn"], False, random_owner(), "RUB", "RUB", True, 1.0, 0, blocked_target_types=["Tinkoff QR"], blocked_source_types=["Tinkoff CashIn", "АльфаБанк CashIn"])
         cc.save()
-        cc = Currency(3, ["Юрик"], False, random_owner(), "CNY", "CNY", True, 11.36, 0)
+        cc = Currency(3, ["Физик карта"], False, random_owner(), "CNY", "CNY", True, 11.36, 0)
         cc.save()
-        cc = Currency(6, ["Alipay"], False, random_owner(), "CNY", "CNY", True, 11.36, 0)
+        cc = Currency(4, ["Юрик"], False, random_owner(), "CNY", "CNY", True, 11.36, 0)
         cc.save()
-        cc = Currency(7, ["Alipay 1688"], False, random_owner(), "CNY", "CNY", True, 11.36, 0, blocked_source_types=["Alipay 1688"])
+        cc = Currency(5, ["Alipay"], False, random_owner(), "CNY", "CNY", True, 11.36, 0)
         cc.save()
-        cc = Currency(8, ["WeChat"], False, random_owner(), "CNY", "CNY", True, 11.36, 0)
+        cc = Currency(6, ["Alipay 1688"], False, random_owner(), "CNY", "CNY", True, 11.36, 0, blocked_source_types=["Alipay 1688"])
         cc.save()
-        cc = Currency(4, ["Юрик Китай", "Юрик ГК"], False, random_owner(), "USD", "USD", True, 80.69, 0)
+        cc = Currency(7, ["WeChat"], False, random_owner(), "CNY", "CNY", True, 11.36, 0)
         cc.save()
-        cc = Currency(5, [], True, random_owner(), "USDT", "USDT", True, 80.89, 0)
+        cc = Currency(8, ["Юрик Китай", "Юрик ГК"], False, random_owner(), "USD", "USD", True, 80.69, 0)
+        cc.save()
+        cc = Currency(9, [], True, random_owner(), "USDT", "USDT", True, 80.89, 0)
         cc.save()
         
-        await m.answer("Готово!")
+        await m.answer("Валюты пересозданы!")
+
+
+        cy = City(id="Moscow", name="Москва")
+        cy.save()
+
+        cy = City(id="Kransnoyarsk", name="Красноярск")
+        cy.save()
+
+        cy = City(id="Sochi", name="Сочи")
+        cy.save()
+        
+        await m.answer("Города пересозданы!")
         
              
 # Чит-коды

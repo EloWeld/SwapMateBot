@@ -4,6 +4,7 @@
     // Для получения дополнительной информации посетите: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Main",
             "type": "python",
@@ -17,6 +18,14 @@
             "type": "python",
             "request": "launch",
             "program": "appBot.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Only Schedule",
+            "type": "python",
+            "request": "launch",
+            "program": "appSchedule.py",
             "console": "integratedTerminal",
             "justMyCode": true
         }

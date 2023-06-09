@@ -50,7 +50,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         await AdminInputStates.ChangeRate.set()
         await state.update_data(currency=currency)
         await c.message.edit_text(f"✏️ Установите новый курс валюты {currency.symbol} для свапов и для покупки через пробел\n\n"
-                                  f"<i>Пример: 7.81 7.50</i>")
+                                  f"Пример: <code>7.81 7.50</code>")
     
     if actions[0] == "my_currencies":
         await send_currencies(c.message, user, True)
