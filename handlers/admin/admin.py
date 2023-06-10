@@ -206,7 +206,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         await c.message.edit_text(c.message.text + "\n\n💜 Одобрена")
         x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
         refill_amount = float(actions[2])
-        currency: Currency = Currency.objects.get({"symbol": actions[3]})
+        currency: Currency = Currency.objects.get({"_id": int(actions[3])})
 
         if str(currency.id) not in x_user.balances:
             x_user.balances[str(currency.id)] = 0
@@ -238,7 +238,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         await c.message.edit_text(c.message.text + "\n\n🛑 Отклонена")
         x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
         refill_amount = float(actions[2])
-        currency: Currency = Currency.objects.get({"symbol": actions[3]})
+        currency: Currency = Currency.objects.get({"_id": int(actions[3])})
 
         await bot.send_message(x_user.id, f"🛑 Ваша заявка на пополнение <code>{refill_amount} {currency.symbol}</code> отклонена!")
 

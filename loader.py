@@ -52,7 +52,7 @@ class Consts(metaclass=ConstantsMetaClass):
 
 
 # Initialize Telegram bot
-bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
+bot = Bot("5626323182:AAEGBL6ptiR_neo3M1Bdh2v4EuygGgijxhk", parse_mode=ParseMode.HTML)
 ms = MemoryStorage()
 dp = Dispatcher(bot, storage=ms)
 # Load middlewares

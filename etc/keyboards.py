@@ -99,13 +99,13 @@ class Keyboards:
 
             
         @staticmethod
-        def refill_user_balance(user: TgUser, refill_amount: float, symbol: str):
+        def refill_user_balance(user: TgUser, refill_amount: float, currency: Currency):
             k = IKeyboard()
           
             k.row(IButton(f"💜 Одобрить",
-                  callback_data=f"|admin:accept_refill:{user.id}:{refill_amount}:{symbol}"))
+                  callback_data=f"|admin:accept_refill:{user.id}:{refill_amount}:{currency.id}"))
             k.row(IButton(f"🛑 Отклонить",
-                  callback_data=f"|admin:discard_refill:{user.id}:{refill_amount}:{symbol}"))
+                  callback_data=f"|admin:discard_refill:{user.id}:{refill_amount}:{currency.id}"))
 
             k.row(IButton(BOT_TEXTS.Hide, callback_data=f"|hide_admin"))
 
@@ -319,6 +319,19 @@ class Keyboards:
             k.row(IButton(BOT_TEXTS.RefillBalance, callback_data="|profile:refill_balance"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data="|main"))
 
+            return k
+        
+        @staticmethod
+        def refill_currency(currencies: List[Currency]):
+            k = IKeyboard()
+            uniq = set()
+            for c in currencies:
+                if c.symbol not in uniq:
+                    k.row(IButton(c.symbol, callback_data=f"|profile:refill_balance_currency:{c.id}"))
+                uniq.add(c.symbol)
+                
+            k.row(IButton(BOT_TEXTS.BackButton, callback_data="|profile:main"))
+                
             return k
 
     @staticmethod

@@ -4,6 +4,7 @@ from typing import Union
 from etc.keyboards import Keyboards
 from etc.states import UserStates
 from etc.texts import BOT_TEXTS
+from etc.utils import notifyAdmins
 from loader import Consts, dp
 from aiogram.types import CallbackQuery, Message
 from aiogram.dispatcher import FSMContext
@@ -45,26 +46,34 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
         await c.message.edit_text(get_profile_text(user), reply_markup=Keyboards.Profile.main(user))
         
     if actions[0] == "refill_balance":
-        await c.message.edit_text(f"⭐ Для пополнения баланса напишите валюту которую вы хотите пополнить и количество. После этого администратору будет отправлена заявка на пополнение\n\nПример: <code>USD 50</code>", 
-                                  reply_markup=Keyboards.back("|profile:main"))
-        await UserStates.RefillBalance.set()
+        currencies = Currency.objects.raw({"is_available": True})
+        await c.message.edit_text(f"⭐ Для пополнения баланса укажите валюту которую вы хотите пополнить.", 
+                                  reply_markup=Keyboards.Profile.refill_currency(currencies))
+        await UserStates.RefillBalanceCurrency.set()
         
-@dp.message_handler(state=UserStates.RefillBalance)
+    if actions[0] == "refill_balance_currency":
+        await state.update_data(refill_currency=Currency.objects.get({"_id": int(actions[1])}))
+        await c.message.edit_text(f"⭐ Напишите на сколько вы хотите пополнить. После этого администратору будет отправлена заявка на пополнение", 
+                                  reply_markup=Keyboards.back("|profile:main"))
+        await UserStates.RefillBalanceAmount.set()
+        
+@dp.message_handler(state=UserStates.RefillBalanceAmount)
 async def _(m: Message, state: FSMContext = None, user: TgUser = None):    
     try:
-        currency_symbol = m.text.split()[0]
-        refill_amount = float(m.text.split()[1])
+        refill_amount = float(m.text.strip().replace(',', '.'))
+        await state.update_data(refill_amount=refill_amount)
     except Exception as e:
         await m.answer(BOT_TEXTS.InvalidValue)
         return
     
+    stateData = await state.get_data()
     
-    await state.finish()
-    await m.answer("💸📥 Заявка отправлена!")
+    await m.answer("💸📥 Заявка на пополнение отправлена!")
     try:
         await bot.send_message(Consts.RefillsChatID, f"💸📥 Новая заявка на пополнение!"
                            f"\n\nПользователь <a href='tg://user?id={user.id}'>{user.real_name}</a> подал заявку на пополнение\n\n"
-                           f"Валюта: <code>{currency_symbol}</code>\n"
-                           f"Количество: <code>{refill_amount}</code>\n", reply_markup=Keyboards.Admin.refill_user_balance(user, refill_amount, currency_symbol))
+                           f"Валюта: <code>{stateData['refill_currency'].symbol}</code>\n"
+                           f"Количество: <code>{refill_amount}</code>\n", reply_markup=Keyboards.Admin.refill_user_balance(user, refill_amount, stateData['refill_currency']))
     except Exception as e:
-        await bot.send_message(user.invited_by.id, f"⚠️ Бот не может отправить сообщение в чат для пополнений!!! Измените персональную константу RefillsChatID.\n\nОшибка: {e}")
+        await notifyAdmins(f"⚠️ Бот не может отправить сообщение в чат для пополнений!!! Измените персональную константу RefillsChatID.\n\nОшибка: {e}")
+    await state.finish()
