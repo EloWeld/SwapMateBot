@@ -47,6 +47,20 @@ class Keyboards:
 
     class Admin:
         class SlaveUsers:
+            
+            @staticmethod
+            def refill_user_currency(user: TgUser, currencies: List[Currency]):
+                k = IKeyboard()
+                uniq = set()
+                for c in currencies:
+                    if c.symbol not in uniq:
+                        k.row(IButton(c.symbol, callback_data=f"|admin_slave_users:refill_balance_currency:{user.id}:{c.id}"))
+                    uniq.add(c.symbol)
+                    
+                k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin_slave_users:open:{user.id}"))
+                    
+                return k
+            
             @staticmethod
             def list(users: List[TgUser], start=0):
                 k = IKeyboard(row_width=2)

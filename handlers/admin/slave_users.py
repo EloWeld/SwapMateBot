@@ -56,10 +56,18 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
     elif actions[0] == "change_balance":
         await c.answer()
         x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
-        await c.message.answer(f"✏️ Введите валюту и новый баланс пользователя\n\nПример: <code>USDT 50</code>", reply_markup=Keyboards.cancel_with_clear())
-        await state.update_data(x_user=x_user)
+        currencies = Currency.objects.raw({"is_available": True})
+        await c.message.edit_text(f"✏️ Введите валюту изменения баланса пользователя", 
+                               reply_markup=Keyboards.Admin.SlaveUsers.refill_user_currency(user, currencies))
+    
+    elif actions[0] == "refill_balance_currency":
+        await c.answer()
+        x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
+        currency: Currency = Currency.objects.get({"_id": int(actions[2])})
+        await c.message.edit_text(f"✏️ Введите новый баланс пользователя валюты <code>{currency.symbol}</code>", 
+                               reply_markup=Keyboards.cancel_with_clear())
+        await state.update_data(x_user=x_user, currency=currency)
         await AdminInputStates.ChangeUserBalance.set()
-        
     elif actions[0] == "change_name":
         await c.answer()
         x_user: TgUser = TgUser.objects.get({"_id": int(actions[1])})
@@ -107,11 +115,11 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
     # Get currency
     stateData = await state.get_data()
     x_user: TgUser = stateData['x_user']
-    currency: Currency = Currency.objects.get({"symbol": m.text.split()[0]})
+    currency: Currency = stateData["currency"]
     
     try:
-        old_balance = x_user.balances[str(currency.id)]
-        new_balance = float(m.text.split()[1].replace(',','.'))
+        old_balance = x_user.balances[str(currency.id)] if str(currency.id) in x_user.balances else 0
+        new_balance = float(m.text.replace(',','.'))
         x_user.balances[str(currency.id)] = new_balance
     except Exception as e:
         await m.answer(BOT_TEXTS.InvalidValue)
