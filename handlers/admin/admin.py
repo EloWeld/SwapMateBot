@@ -311,11 +311,15 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
     deal: Deal = stateData['deal']
 
     try:
+        old_rate = deal.rate
         rate = float(m.text.replace(',','.'))
     except Exception as e:
         await m.answer(BOT_TEXTS.InvalidValue)
         return
 
+    if old_rate < 1 and rate > 1:
+        rate = 1 / rate
+    
     should_have_to_receive = deal.deal_value * deal.rate
     will_have_to_give = should_have_to_receive / rate
     # If user wants to receive
