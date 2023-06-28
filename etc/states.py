@@ -9,6 +9,7 @@ class AdminInputStates(StatesGroup):
     ChangeUserBalance = State()
     ChangeDealRate = State()
     ChangeUserRealName = State()
+    AddVideo = State()
 
 class IdentifyState(StatesGroup):
     Name = State()

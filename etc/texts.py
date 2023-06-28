@@ -44,6 +44,7 @@ class BotTexts(BaseModel):
     
     RefillsChat = "📥 Чат пополнений"
     MainMenuButton = "🏠 На главную"
+    LearningVideos = "📽️ Обучающие видео"
 
     verbose_emoji = {
         "CANCELLED": "⛔",

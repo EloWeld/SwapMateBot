@@ -69,3 +69,17 @@ class City(MongoModel):
         write_concern = WriteConcern(j=True)
         connection_alias = 'pymodm-conn'
         collection_name = 'City'
+        
+        
+class LearngingVideo(MongoModel):
+    id = fields.CharField()
+    filename = fields.CharField()
+    tg_file_id = fields.CharField()
+    title = fields.CharField()
+    created_at = fields.DateTimeField()
+    
+    
+    class Meta:
+        write_concern = WriteConcern(j=True)
+        connection_alias = 'pymodm-conn'
+        collection_name = 'LearngingVideos'

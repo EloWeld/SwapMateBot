@@ -1,7 +1,7 @@
 from etc.texts import BOT_TEXTS
 from loader import MAX_INLINE_COUNT
 from models.deal import Deal
-from models.etc import City, Currency
+from models.etc import City, Currency, LearngingVideo
 from models.tg_user import TgUser
 from typing import List, Union
 from aiogram.types import \
@@ -348,6 +348,15 @@ class Keyboards:
                 
             return k
 
+
+    class LearningVideo:
+        @staticmethod
+        def videos_main_menu(videos: List[LearngingVideo]):
+            k = IKeyboard()
+            for video in videos:
+                k.row(IButton(video.title, callback_data=f"|video:open:{video.id}"))
+            return k
+
     @staticmethod
     def start_menu(user: TgUser):
         k = IKeyboard()
@@ -366,6 +375,7 @@ class Keyboards:
     def start_menu_bottom():
         k = Keyboard(resize_keyboard=True)
         k.row(BOT_TEXTS.MainMenuButton)
+        k.row(BOT_TEXTS.LearningVideos)
         return k
 
     @staticmethod
