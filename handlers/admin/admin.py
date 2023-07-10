@@ -142,7 +142,7 @@ async def _(c: CallbackQuery, state: FSMContext=None, user: TgUser = None):
         deals = sorted(deals, key= lambda x: x.created_at, reverse=True)
         await state.update_data(deals_status=status)
 
-        await c.message.edit_text(f"💎 Ниже список свапов со статусом {verbose_status}", reply_markup=Keyboards.Admin.deals(deals, start, f"|admin:deals_with_status:{status}:0"))
+        await c.message.edit_text(f"💎 Ниже список свапов со статусом {verbose_status}", reply_markup=Keyboards.Admin.deals(deals, start, f"|admin:deals_with_status:{status}"))
         
     if actions[0] == "see_deal":
         try:
