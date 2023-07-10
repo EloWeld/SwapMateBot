@@ -160,7 +160,7 @@ class Keyboards:
         def deals(deals: List[Deal], start: int=0, info=None):
             k = IKeyboard()
             for deal in deals[start:start+20]:
-                k.row(IButton(f"{deal.get_full_external_id()} | {deal.source_currency.symbol} > {deal.target_currency.symbol}",
+                k.row(IButton(f"{deal.created_at.strftime('%d.%m.%y')} #{deal.get_full_external_id()} | {BOT_TEXTS.verbose_emoji[deal.status]} | {deal.dir_text(remove_currency_type=True, with_values=True, format_html_tag=False).split(' ', maxsplit=1)[1]}",
                       callback_data=f"|admin:see_deal:{deal.id}"))
             if len(deals) > 20 and info:
                 k.row()
