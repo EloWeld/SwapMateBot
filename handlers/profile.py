@@ -1,6 +1,6 @@
 import datetime
 import random
-from typing import Union
+from typing import List, Union
 from etc.keyboards import Keyboards
 from etc.states import UserStates
 from etc.texts import BOT_TEXTS
@@ -8,10 +8,12 @@ from etc.utils import notifyAdmins
 from loader import Consts, dp
 from aiogram.types import CallbackQuery, Message
 from aiogram.dispatcher import FSMContext
+from models.cash_flow import CashFlow
 from models.deal import Deal
 from models.etc import Currency
 from models.tg_user import TgUser
 from loader import bot
+from pymodm.errors import DoesNotExist
 
 # Text
 def get_profile_text(user: TgUser):
@@ -44,12 +46,32 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
     if actions[0] in ["main"]:
         await state.finish()
         await c.message.edit_text(get_profile_text(user), reply_markup=Keyboards.Profile.main(user))
-        
+    if actions[0] == "see_refill":
+        try:
+            refill: CashFlow = CashFlow.objects.get({"_id": int(actions[1])})
+        except DoesNotExist:
+            await c.answer("❌ Пополнение не найдено")
+            return
+        await c.answer()
+        await c.message.answer(f"📥 Пополнение\n"
+                               f"📅 Дата: <code>{refill.created_at.strftime('%d.%m.%Y %H:%M:%S')}</code>\n"
+                               f"💠 Валюта: <code>{refill.target_currency.symbol}</code>\n"
+                               f"💸 Количество: <code>{round(refill.additional_amount, 2)}</code>\n", reply_markup=Keyboards.hide())
     if actions[0] == "refill_balance":
         currencies = Currency.objects.raw({"is_available": True})
         await c.message.edit_text(f"⭐ Для пополнения баланса укажите валюту которую вы хотите пополнить.", 
                                   reply_markup=Keyboards.Profile.refill_currency(currencies))
         await UserStates.RefillBalanceCurrency.set()
+        
+    if actions[0] == "refills_history":
+        user_cash_flow: List[CashFlow] = list(CashFlow.objects.raw({"user": user.id}))
+        refills = [x for x in user_cash_flow if x.type == "REFILL_BALANCE"]
+        refills = sorted(refills, key=lambda x: x.created_at, reverse=True)
+        if len(refills) == 0:
+            await c.answer("🕸️ История ваших пополнений пуста 🕸️")
+        else:
+            start = int(actions[1])
+            await c.message.edit_text("История пополнений:", reply_markup=Keyboards.Profile.refillsHistory(refills, start=start))
         
     if actions[0] == "refill_balance_currency":
         await state.update_data(refill_currency=Currency.objects.get({"_id": int(actions[1])}))

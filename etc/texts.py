@@ -22,7 +22,9 @@ class BotTexts(BaseModel):
     Next = "➡"
     Buy = "➡️💸➡️"
     RefillBalance = "📥 Пополнить баланс"
+    RefillsHistory = "🗃️ История пополнений"
     ChangeDealRate = "✒️ Изменить курс сделки"
+    AnullateDeal = "❌ Анулировать сделку"
 
     InvalidValue = "❗ Некорректное значение"
 
@@ -45,6 +47,7 @@ class BotTexts(BaseModel):
     RefillsChat = "📥 Чат пополнений"
     MainMenuButton = "🏠 На главную"
     LearningVideos = "📽️ Обучающие видео"
+    Exit = "🚪 Выход"
 
     verbose_emoji = {
         "CANCELLED": "⛔",

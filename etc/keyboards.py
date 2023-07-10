@@ -1,5 +1,6 @@
 from etc.texts import BOT_TEXTS
 from loader import MAX_INLINE_COUNT
+from models.cash_flow import CashFlow
 from models.deal import Deal
 from models.etc import City, Currency, LearngingVideo
 from models.tg_user import TgUser
@@ -131,11 +132,11 @@ class Keyboards:
             f_delas_count = len([x for x in deals if x.status == "FINISHED"])
             k = IKeyboard()
             k.row(IButton(f"Активные ({a_delas_count})",
-                  callback_data=f"|admin:deals_with_status:{'ACTIVE'}"))
+                  callback_data=f"|admin:deals_with_status:{'ACTIVE'}:0"))
             k.row(IButton(f"Отменённые ({c_delas_count})",
-                  callback_data=f"|admin:deals_with_status:{'CANCELLED'}"))
+                  callback_data=f"|admin:deals_with_status:{'CANCELLED'}:0"))
             k.row(IButton(f"Завершённые ({f_delas_count})",
-                  callback_data=f"|admin:deals_with_status:{'FINISHED'}"))
+                  callback_data=f"|admin:deals_with_status:{'FINISHED'}:0"))
 
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
 
@@ -156,11 +157,14 @@ class Keyboards:
             return k
 
         @staticmethod
-        def deals(deals: List[Deal]):
+        def deals(deals: List[Deal], start: int=0, info=None):
             k = IKeyboard()
-            for deal in deals:
+            for deal in deals[start:start+20]:
                 k.row(IButton(f"{deal.get_full_external_id()} | {deal.source_currency.symbol} > {deal.target_currency.symbol}",
                       callback_data=f"|admin:see_deal:{deal.id}"))
+            if len(deals) > 20 and info:
+                k.row()
+                k.add(*Keyboards.create_pagination_buttons(start, deals, info + ":{0}"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data=f"|admin:main"))
             return k
 
@@ -176,10 +180,13 @@ class Keyboards:
                 k.insert(IButton(BOT_TEXTS.Cancel,
                         callback_data=f"|admin:cancel_deal:{deal.id}"))
                 k.row(IButton(BOT_TEXTS.ChangeDealRate, callback_data=f"|admin:change_rate:{deal.id}"))
+            else:
+                k.row(IButton(BOT_TEXTS.AnullateDeal,
+                        callback_data=f"|admin:anullate_deal:{deal.id}"))
             k.row(IButton(BOT_TEXTS.OpenUser,
                     callback_data=f"|admin_slave_users:user_from_deal:{deal.id}"))
             k.row(IButton(BOT_TEXTS.BackButton,
-                  callback_data=f"|admin:deals_with_status:{deal.status}"))
+                  callback_data=f"|admin:deals_with_status:{deal.status}:0"))
             return k
         
         @staticmethod
@@ -305,7 +312,7 @@ class Keyboards:
         def user_deals_history(deals: List[Deal]):
             k = IKeyboard()
             for deal in deals:
-                k.row(IButton(f"{deal.get_full_external_id()} | {BOT_TEXTS.verbose_emoji[deal.status]} | {deal.source_currency.symbol} > {deal.target_currency.symbol}",
+                k.row(IButton(f"{deal.created_at.strftime('%d.%m.%y')} #{deal.get_full_external_id()} | {BOT_TEXTS.verbose_emoji[deal.status]} | {deal.dir_text(remove_currency_type=True, with_values=True, format_html_tag=False).split(' ', maxsplit=1)[1]}",
                               callback_data=f"|convertor:see_deal:{deal.id}"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data="|main"))
             return k
@@ -328,9 +335,21 @@ class Keyboards:
     class Profile:
             
         @staticmethod
+        def refillsHistory(refills: List[CashFlow], start=0):
+            k = IKeyboard()
+            for refill in  refills[start:start+20]:
+                tc: Currency = refill.target_currency
+                k.row(IButton(f"{refill.created_at.strftime('%d.%m.%y')} | {refill.additional_amount} | {tc.symbol}", callback_data=f"|profile:see_refill:{refill.id}"))
+            if len(refills) > 20:
+                k.add(*Keyboards.create_pagination_buttons(start, refills, "|profile:refills_history:{0}"))
+            k.row(IButton(BOT_TEXTS.Exit, callback_data="|profile:main"))
+            return k
+        
+        @staticmethod
         def main(user: TgUser):
             k = IKeyboard()
             k.row(IButton(BOT_TEXTS.RefillBalance, callback_data="|profile:refill_balance"))
+            k.row(IButton(BOT_TEXTS.RefillsHistory, callback_data="|profile:refills_history:0"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data="|main"))
 
             return k
@@ -423,6 +442,21 @@ class Keyboards:
         k.row(IButton(BOT_TEXTS.Cancel, callback_data="|cancel_with_clear"))
         return k
     
+    @staticmethod
+    def create_pagination_buttons(start, items, callback_format: str):
+        remaining_pages_start = start // 20
+        remaining_pages_end = (len(items) - start - 20) if (len(items) - start - 20) >= 0 else 0
+
+        buttons = [
+            IButton("⬅️" + ('' if remaining_pages_start < 1 else f" {remaining_pages_start}"), callback_data=f"{callback_format.format(start - 20)}")
+            if start - 20 >= 0 else
+            IButton("⬅️", callback_data=f"{callback_format.format(0)}"),
+            IButton(
+            "➡️" + ('' if remaining_pages_end < 1 else f" {remaining_pages_end // 20+1}"),
+            callback_data=f"{callback_format.format(start + 20)}"
+            )
+        ]
+        return buttons
 
     @staticmethod
     def generate_from_text(text):

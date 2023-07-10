@@ -1,3 +1,4 @@
+import datetime
 from typing import Union
 from pymongo.write_concern import WriteConcern
 from pymodm import MongoModel, fields
@@ -22,7 +23,7 @@ class CashFlow(MongoModel):
     source_currency_type = fields.CharField(default="")
     target_currency_type = fields.CharField(default="")
 
-    created_at = fields.DateTimeField(blank=False)
+    created_at: datetime.datetime = fields.DateTimeField(blank=False)
     
     class Meta:
         write_concern = WriteConcern(j=True)

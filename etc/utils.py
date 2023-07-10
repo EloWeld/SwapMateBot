@@ -10,7 +10,13 @@ from models.deal import Deal
 from models.etc import Currency
 from models.tg_user import TgUser
 from pymodm import MongoModel
+from aiogram.types import Message
 
+async def tryDelete(m: Message):
+    try:
+        await m.delete()
+    except Exception as e:
+        print(f"Cant delete message {m.message_id}, {e}")
 
 def rate_to_str(c1: str, c2: str, types: List[str], rub_rate, postfix=""):
     t = f"1 {c2}{postfix} = {rub_rate:.2f} {c1}"
