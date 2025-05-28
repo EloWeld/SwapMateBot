@@ -309,11 +309,14 @@ class Keyboards:
             
         
         @staticmethod
-        def user_deals_history(deals: List[Deal]):
+        def user_deals_history(deals: List[Deal], start=0):
             k = IKeyboard()
-            for deal in deals:
+            deals = sorted(deals, key=lambda x: x.created_at, reverse=True)
+            for deal in deals[:20]:
                 k.row(IButton(f"{deal.created_at.strftime('%d.%m.%y')} #{deal.get_full_external_id()} | {BOT_TEXTS.verbose_emoji[deal.status]} | {deal.dir_text(remove_currency_type=True, with_values=True, format_html_tag=False).split(' ', maxsplit=1)[1]}",
                               callback_data=f"|convertor:see_deal:{deal.id}"))
+            if len(deals) > 20:
+                k.add(*Keyboards.create_pagination_buttons(start, deals, "|convertor:deals_history:{0}"))
             k.row(IButton(BOT_TEXTS.BackButton, callback_data="|main"))
             return k
 
@@ -323,7 +326,7 @@ class Keyboards:
             if deal.status == Deal.DealStatuses.ACTIVE.value:
                 k.row(IButton(BOT_TEXTS.SuggestRate, callback_data=f"|deal_calc:suggest_rate:{deal.id}"))
             k.row(IButton(BOT_TEXTS.BackButton,
-                  callback_data=f"|convertor:deals_history"))
+                  callback_data=f"|convertor:deals_history:0"))
             return k
         
         @staticmethod
@@ -385,7 +388,7 @@ class Keyboards:
               callback_data="|convertor:actual_rates"))
         k.row(IButton(BOT_TEXTS.DealCalc, callback_data="|convertor:deal_calc"))
         k.row(IButton(BOT_TEXTS.DealsHistory,
-              callback_data="|convertor:deals_history"))
+              callback_data="|convertor:deals_history:0"))
         k.row(IButton(BOT_TEXTS.Profile, callback_data="|profile:main"))
 
         return k

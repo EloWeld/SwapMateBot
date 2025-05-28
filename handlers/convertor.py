@@ -23,12 +23,14 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
     stateData = {} if state is None else await state.get_data()
 
     if actions[0] == "deals_history":
+        start = int(actions[1])
         deals = Deal.objects.raw({"owner": user.id})
+        deals = sorted(deals, key=lambda x: x.created_at, reverse=True)
         if not deals:
             await c.answer("🕸️ Ваша история свапов пуста", show_alert=True)
             return
 
-        await c.message.edit_text("📊 Ваша история свапов:", reply_markup=Keyboards.Deals.user_deals_history(deals))
+        await c.message.edit_text("📊 Ваша история свапов:", reply_markup=Keyboards.Deals.user_deals_history(deals, start))
     if actions[0] == "actual_rates":
         if state:
             await state.finish()

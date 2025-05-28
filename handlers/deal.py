@@ -66,22 +66,21 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
             await state.finish()
         except Exception as e:
             await c.message.delete()
-            
+
     if actions[0] == "wanna_give":
         selFrom: Currency = stateData.get('sel_from')
         selTo: Currency = stateData.get('sel_to')
         await c.message.edit_text(f"📈 Введите количество <b>{selFrom.symbol}</b> которые вы хотите свапнуть на <b>{selTo.symbol}</b>", reply_markup=Keyboards.back('|convertor:deal_calc'))
         await state.update_data(dir="wanna_give")
         await DealStates.Value.set()
-            
+
     if actions[0] == "wanna_receive":
         selFrom: Currency = stateData.get('sel_from')
         selTo: Currency = stateData.get('sel_to')
         await c.message.edit_text(f"📈 Введите количество <b>{selTo.symbol}</b> которое хотите получить, отдав <b>{selFrom.symbol}</b>", reply_markup=Keyboards.back('|convertor:deal_calc'))
         await state.update_data(dir="wanna_receive")
         await DealStates.Value.set()
-        
-        
+
     if actions[0] == "start_deal":
         try:
             selFrom: Currency = stateData.get('sel_from')
@@ -114,7 +113,6 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
         await c.message.answer("📝 Напишите дополнительную информацию для свапа")
         await UserStates.DealAdditionalInfo.set()
 
-
     if actions[0] == "send_deal":
 
         selFrom: Currency = stateData.get('sel_from')
@@ -126,47 +124,48 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
         #     await c.answer("😔 К сожалению пока что мы не можем предоставить такой объём валюты для свапа. Попробуйте позднее или свяжитесь с администратором", show_alert=True)
         #     await state.finish()
         #     return
-        
+
         # Get admin
         admin: TgUser = TgUser.objects.raw({"is_admin": True}).first()
 
         # Create deal
         maxExtIDDealID = get_max_id_doc(Deal, {"created_at": {"$lt": find_next_month(datetime.datetime.now()),
-                                                                  "$gt": find_month_start(datetime.datetime.now())}}) + 1
+                                                              "$gt": find_month_start(datetime.datetime.now())}}) + 1
         deal = Deal(get_max_id_doc(Deal) + 1,
-                 admin=admin,
-                 profit=0,
-                 rate=selTo.rate_with(selFrom),
-                 external_id=maxExtIDDealID,
-                 deal_value=deal_value,
-                 owner=user,
-                 source_currency=selFrom,
-                 target_currency=selTo,
-                 currency_type_from=stateData.get('sel_from_type', None),
-                 currency_type_to=stateData.get('sel_to_type', None),
-                 additional_info=stateData.get('additional_info', 'Отсутствует'),
-                 dir=stateData.get('dir', 'wanna_give'),
-                 created_at=datetime.datetime.now())
+                    admin=admin,
+                    profit=0,
+                    rate=selTo.rate_with(selFrom),
+                    external_id=maxExtIDDealID,
+                    deal_value=deal_value,
+                    original_deal_value=deal_value,
+                    owner=user,
+                    source_currency=selFrom,
+                    target_currency=selTo,
+                    currency_type_from=stateData.get('sel_from_type', None),
+                    currency_type_to=stateData.get('sel_to_type', None),
+                    additional_info=stateData.get('additional_info', 'Отсутствует'),
+                    dir=stateData.get('dir', 'wanna_give'),
+                    created_at=datetime.datetime.now())
         deal.profit = deal.calculate_profit()
         deal.save()
-        
+
         if str(deal.source_currency.id) not in user.balances:
             user.balances[str(deal.source_currency.id)] = 0
             user.save()
-            
+
         user.balances[str(deal.source_currency.id)] -= deal.deal_value
         user.save()
-        
+
         await c.message.edit_text(f"⭐ Заявка на свап <code>#{deal.id}</code> отправлена!")
-        
+
         await c.message.answer(deal.get_user_text(), reply_markup=Keyboards.Deals.deal_info(user, deal))
         await state.finish()
         await notifyAdmins(f"⭐ Открылась новая заявка на свап <code>#{deal.id}</code>!\n\nПримерный профит: <code>{deal.profit:.2f} {deal.source_currency.symbol}</code>", reply_markup=Keyboards.Admin.jump_to_deal(deal))
-        
+
 
 async def answer_deal_preview(m: Message, stateData: Dict):
-    currency_type_from=stateData.get('sel_from_type', None),
-    currency_type_to=stateData.get('sel_to_type', None),
+    currency_type_from = stateData.get('sel_from_type', None),
+    currency_type_to = stateData.get('sel_to_type', None),
     currency_type_from = '' if currency_type_from is None else currency_type_from
     currency_type_to = '' if currency_type_to is None else currency_type_to
     deal = Deal(
@@ -186,8 +185,9 @@ async def answer_deal_preview(m: Message, stateData: Dict):
                    f"📥 Получаете: <code>{deal.target_currency.rate_with(deal.source_currency) * deal.deal_value:.2f}</code> <code>{deal.target_currency.symbol}</code>\n"
                    f"💱 Курс: <b>{deal.get_rate_text()}</b>\n"
                    f"\n"
-                   f"📝 Дополнительная информация: <b> {deal.additional_info} </b>\n", 
+                   f"📝 Дополнительная информация: <b> {deal.additional_info} </b>\n",
                    reply_markup=Keyboards.Calc.deal_request_done(stateData))
+
 
 @dp.message_handler(state=UserStates.DealAdditionalInfo)
 async def _(m: Message, state: FSMContext = None, user: TgUser = None):
@@ -208,31 +208,29 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
     try:
         deal_value = float(m.text.strip())
         assert deal_value != 0
-        
+
         if (await state.get_data())['dir'] == 'wanna_receive':
             stateData = await state.get_data()
             selFrom: Currency = stateData.get('sel_from')
             selTo: Currency = stateData.get('sel_to')
             deal_value /= selTo.rate_with(selFrom)
-        
+
         await state.update_data(deal_value=deal_value)
     except Exception as e:
         await m.answer(BOT_TEXTS.InvalidValue)
         return
     stateData = {} if state is None else await state.get_data()
-    
+
     # if str(stateData['sel_from'].id) not in user.balances:
     #     await m.answer(f"⚠️ У вас в кошельке нет валюты <code>{stateData['sel_from'].symbol}</code>!", reply_markup=Keyboards.back('|convertor:deal_calc'))
-    #     return 
-    
+    #     return
+
     # if user.balances[str(stateData['sel_from'].id)] < deal_value:
     #     balance = user.balances[str(stateData['sel_from'].id)]
     #     await m.answer(f"⚠️ Ваш баланс: <code>{balance} {stateData['sel_from'].symbol}</code>. Для такого обмена пополните баланс на <code>{deal_value - balance} {stateData['sel_from'].symbol}</code>!", reply_markup=Keyboards.back('|convertor:deal_calc'))
     #     return
 
-
     await answer_deal_preview(m, stateData)
-
 
 
 @dp.message_handler(state=UserStates.SuggestRate)
@@ -245,12 +243,10 @@ async def _(m: Message, state: FSMContext = None, user: TgUser = None):
         return
 
     deal: Deal = (await state.get_data())['deal']
-    rate: float  = (await state.get_data())['rate']
+    rate: float = (await state.get_data())['rate']
     if deal.rate <= 1 and rate > 1:
-        rate = 1/ rate
+        rate = 1 / rate
 
-    
-    await state.finish()   
+    await state.finish()
     await notifyAdmins(f"💡 Покупатель <a href='tg://user?id={user.id}'>{user.real_name}</a> предложил другой курс по свапу <code>#{deal.id}</code> {deal.dir_text()}", reply_markup=Keyboards.Admin.suggested_rate(deal, rate))
     await m.answer(f"⭐ Вы предложили курс по свапу <code>#{deal.id}</code>\n")
-
