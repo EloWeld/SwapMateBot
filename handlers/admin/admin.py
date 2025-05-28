@@ -186,6 +186,7 @@ async def _(c: CallbackQuery, state: FSMContext = None, user: TgUser = None):
             target_amount=deal.deal_value * deal.rate,
             additional_data=f"По курсу({'Хочу получить' if deal.dir == 'wanna_receive' else 'Хочу отдать'}): ",
             additional_amount=deal.rate if deal.rate > 1 else 1/deal.rate,
+            deal_id=deal.id,
             created_at=datetime.datetime.now(),
         )
         cash_flow.save()

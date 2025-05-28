@@ -4,13 +4,14 @@ from pymongo.write_concern import WriteConcern
 from pymodm import MongoModel, fields
 from enum import Enum
 
+
 class CashFlow(MongoModel):
-    
+
     class CashFlowType(Enum):
         REFILL_BALANCE = "ПОПОЛНЕНИЕ СЧЁТА"
         SWAP = "СВАП"
         BALANCE_EDIT = "ИЗМЕНЕНИЕ БАЛАНСА"
-    
+
     id = fields.IntegerField(primary_key=True)
     user = fields.ReferenceField('TgUser', blank=True)
     type = fields.CharField(choices=list(CashFlowType.__members__.keys()), blank=False)
@@ -22,15 +23,15 @@ class CashFlow(MongoModel):
     additional_amount = fields.FloatField(blank=True, default=0)
     source_currency_type = fields.CharField(default="")
     target_currency_type = fields.CharField(default="")
+    deal_id = fields.IntegerField(blank=True)
 
     created_at: datetime.datetime = fields.DateTimeField(blank=False)
-    
+
     class Meta:
         write_concern = WriteConcern(j=True)
         connection_alias = 'pymodm-conn'
         collection_name = 'CashFlow'
-        
-        
+
     @staticmethod
     def get_row_headers():
         return [
@@ -44,7 +45,7 @@ class CashFlow(MongoModel):
             "Доп. количетсво",
             "Дата и время",
         ]
-    
+
     def as_row(self):
         return [
             self.id,
