@@ -1,3 +1,4 @@
+from middlewares.user_middleware import TgUserMiddleware
 import datetime
 from pymongo import MongoClient
 import os
@@ -27,6 +28,8 @@ MDB = MongoClient(MONGODB_CONNECTION_URI).get_database(MONGO_DB_NAME)
 connect(MONGODB_CONNECTION_URI+f'/{MONGO_DB_NAME}?authSource=admin', alias="pymodm-conn")
 
 # Constants class
+
+
 class ConstantsMetaClass(type):
     def __getattr__(cls, key):
         doc = MDB.Settings.find_one(dict(id="Constants"))
@@ -52,17 +55,16 @@ class Consts(metaclass=ConstantsMetaClass):
 
 
 # Initialize Telegram bot
-bot = Bot("5626323182:AAEGBL6ptiR_neo3M1Bdh2v4EuygGgijxhk", parse_mode=ParseMode.HTML)
+bot = Bot(BOT_TOKEN, parse_mode=ParseMode.HTML)
 ms = MemoryStorage()
 dp = Dispatcher(bot, storage=ms)
 # Load middlewares
-from middlewares.user_middleware import TgUserMiddleware
 dp.setup_middleware(TgUserMiddleware())
 
 
 async def onBotStartup(data):
     bot_info = await bot.get_me()
-    
+
     MDB.Settings.update_one(dict(id="Constants"), {"$set": dict(BotUsername=bot_info.username)})
     from etc.utils import notifyAdmins
     logger.info(f"Bot started! https://t.me/{Consts.BotUsername}")
